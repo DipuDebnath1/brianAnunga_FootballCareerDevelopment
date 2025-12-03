@@ -5,7 +5,6 @@ import httpStatus from "http-status";
 import { response } from "../../lib/response";
 // console log
 const register = async (req: Request, res: Response) => {
-  console.log(req.body);
   try {
     const user = await authService.register(req.body);
     res.status(httpStatus.CREATED).json(

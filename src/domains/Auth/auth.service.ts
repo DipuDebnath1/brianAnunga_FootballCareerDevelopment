@@ -14,7 +14,7 @@ const register = async (userData: {
   const existingUser = await User.findOne({
     $or: [{ email }],
   });
-  if (existingUser) throw new Error("Email or Phone number is already taken");
+  if (existingUser) throw new Error("Email is already taken");
 
   const oneTimeCode =
     Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;

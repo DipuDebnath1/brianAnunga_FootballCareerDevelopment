@@ -8,7 +8,9 @@ const registerValidation = Joi.object({
     .pattern(/[a-zA-Z]/)
     .pattern(/\d/)
     .required(),
-  role: Joi.string().required().valid("user", "admin"),
+  role: Joi.string()
+    .required()
+    .valid("user", "player", "coach", "agents", "admin"),
 });
 
 const verificationValidation = Joi.object({
