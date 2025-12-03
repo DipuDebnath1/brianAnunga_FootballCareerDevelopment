@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.4",
     "@types/heic-convert": "^2.1.0",
     "@types/jsonwebtoken": "^9.0.10",
