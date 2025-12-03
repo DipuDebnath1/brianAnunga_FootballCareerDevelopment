@@ -53,6 +53,9 @@ importers:
       mongoose:
         specifier: ^8.19.2
         version: 8.20.1
+      ms:
+        specifier: ^2.1.3
+        version: 2.1.3
       multer:
         specifier: ^2.0.2
         version: 2.0.2
@@ -90,6 +93,9 @@ importers:
       '@types/mongoose':
         specifier: ^5.11.96
         version: 5.11.97
+      '@types/ms':
+        specifier: ^2.1.0
+        version: 2.1.0
       '@types/multer':
         specifier: ^2.0.0
         version: 2.0.0
