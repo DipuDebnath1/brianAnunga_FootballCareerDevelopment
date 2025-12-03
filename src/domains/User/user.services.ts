@@ -6,7 +6,7 @@ const getAllUsers = async () => {
 
 const userDetails = async (userId: string) => {
   return await User.findById(userId).select(
-    "email name phoneNumber role image isEmailVerified"
+    "email name role image isEmailVerified"
   );
 };
 

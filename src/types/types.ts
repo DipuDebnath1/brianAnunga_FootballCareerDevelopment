@@ -5,5 +5,4 @@ export interface ProtectedUser {
   password: string;
   image: string;
   role: string;
-  phoneNumber: string;
 }

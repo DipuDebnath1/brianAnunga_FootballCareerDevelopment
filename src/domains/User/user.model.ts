@@ -10,7 +10,6 @@ export interface IAMUser extends Document {
   password: string;
   image: string;
   role: string;
-  phoneNumber: string;
   oneTimeCode: number | null;
   isEmailVerified: boolean;
   isResetPassword: boolean;
@@ -59,11 +58,6 @@ const userSchema = new Schema<IAMUser>(
       type: String,
       enum: roles,
       default: "user",
-    },
-    phoneNumber: {
-      type: String,
-      unique: true,
-      required: true,
     },
     oneTimeCode: { type: Number, default: null },
     isEmailVerified: { type: Boolean, default: false },

@@ -8,7 +8,6 @@ const registerValidation = Joi.object({
     .pattern(/[a-zA-Z]/)
     .pattern(/\d/)
     .required(),
-  phoneNumber: Joi.string().min(10).required(),
   role: Joi.string().required().valid("user", "admin"),
 });
 

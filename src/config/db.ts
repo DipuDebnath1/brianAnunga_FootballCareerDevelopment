@@ -5,7 +5,6 @@ dotenv.config();
 const MongodbURL = process.env.DATABASE_URL;
 
 const connectionToDb = async () => {
-  console.log(MongodbURL, "mongodb URL");
   if (!MongodbURL) {
     process.exit(1);
   }

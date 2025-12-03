@@ -22,7 +22,6 @@ export const authMiddleware = (
       email: decoded.email,
       password: decoded.password,
       image: decoded.image,
-      phoneNumber: decoded.phoneNumber,
     };
     req.user = user;
 

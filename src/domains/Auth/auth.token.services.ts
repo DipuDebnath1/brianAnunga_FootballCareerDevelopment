@@ -8,7 +8,6 @@ interface UserTokenPayload {
   email: string;
   image: string;
   password: string;
-  phoneNumber: string;
 }
 
 export const createToken = (

@@ -7,13 +7,12 @@ const register = async (userData: {
   name: string;
   email: string;
   password: string;
-  phoneNumber: string;
 }) => {
-  const { email, password, phoneNumber, name } = userData;
+  const { email, password, name } = userData;
 
   // Check if email or phone number already exists
   const existingUser = await User.findOne({
-    $or: [{ email }, { phoneNumber }],
+    $or: [{ email }],
   });
   if (existingUser) throw new Error("Email or Phone number is already taken");
 
@@ -23,7 +22,6 @@ const register = async (userData: {
     name,
     email,
     password,
-    phoneNumber,
     oneTimeCode: oneTimeCode, // Generate a one-time code for email verification
   });
 
@@ -52,7 +50,7 @@ const verifyEmail = async (email: string, code: number) => {
 // Login User
 const loginUser = async (email: string, password: string) => {
   const user = await User.findOne({ email }).select(
-    "name email image password phoneNumber role isEmailVerified"
+    "name email image password role isEmailVerified"
   );
 
   if (!user) throw new Error("User not found");
@@ -73,7 +71,6 @@ const loginUser = async (email: string, password: string) => {
     email: user.email,
     image: user.image,
     password: user.password,
-    phoneNumber: user.phoneNumber,
   };
 
   // Generate JWT tokens
