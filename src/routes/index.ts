@@ -7,6 +7,7 @@ import coachRoutes from "../domains/Coach/coach.route";
 import agentRoutes from "../domains/Agent/agent.route";
 import messageRoutes from "../domains/Messaging/message.route";
 import conversationRoutes from "../domains/Conversations/conversation.route";
+import ratingsRoutes from "../domains/Ratings/rating.route";
 // Initialize the router
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use("/coaches", coachRoutes);
 router.use("/agents", agentRoutes);
 router.use("/conversations", conversationRoutes);
 router.use("/messages", messageRoutes);
+router.use("/ratings", ratingsRoutes);
 
 export default router;
