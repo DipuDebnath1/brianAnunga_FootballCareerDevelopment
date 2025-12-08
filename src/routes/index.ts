@@ -4,6 +4,9 @@ import authRoutes from "../domains/Auth/auth.route";
 import generalsRoutes from "../domains/Generals/generals.route";
 import playersRoutes from "../domains/Players/players.route";
 import coachRoutes from "../domains/Coach/coach.route";
+import agentRoutes from "../domains/Agent/agent.route";
+import messageRoutes from "../domains/Messaging/message.route";
+import conversationRoutes from "../domains/Conversations/conversation.route";
 // Initialize the router
 const router = Router();
 
@@ -12,5 +15,8 @@ router.use("/auth", authRoutes);
 router.use("/generals", generalsRoutes);
 router.use("/players", playersRoutes);
 router.use("/coaches", coachRoutes);
+router.use("/agents", agentRoutes);
+router.use("/conversations", conversationRoutes);
+router.use("/messages", messageRoutes);
 
 export default router;
