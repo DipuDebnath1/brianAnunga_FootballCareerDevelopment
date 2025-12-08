@@ -8,6 +8,7 @@ import agentRoutes from "../domains/Agent/agent.route";
 import messageRoutes from "../domains/Messaging/message.route";
 import conversationRoutes from "../domains/Conversations/conversation.route";
 import ratingsRoutes from "../domains/Ratings/rating.route";
+import agentRequestRoutes from "../domains/AgentRequest/agentRequest.route";
 // Initialize the router
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use("/agents", agentRoutes);
 router.use("/conversations", conversationRoutes);
 router.use("/messages", messageRoutes);
 router.use("/ratings", ratingsRoutes);
+router.use("/agent-request", agentRequestRoutes);
 
 export default router;
