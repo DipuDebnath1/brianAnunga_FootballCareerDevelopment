@@ -9,6 +9,7 @@ import messageRoutes from "../domains/Messaging/message.route";
 import conversationRoutes from "../domains/Conversations/conversation.route";
 import ratingsRoutes from "../domains/Ratings/rating.route";
 import agentRequestRoutes from "../domains/AgentRequest/agentRequest.route";
+import coachVideoRequestRoutes from "../domains/CoachVideoRequest/coachVideoRequest.route";
 // Initialize the router
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use("/conversations", conversationRoutes);
 router.use("/messages", messageRoutes);
 router.use("/ratings", ratingsRoutes);
 router.use("/agent-request", agentRequestRoutes);
+router.use("/coach-request", coachVideoRequestRoutes);
 
 export default router;
