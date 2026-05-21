@@ -43,7 +43,7 @@ const getAllSubscriptions = async (req: Request, res: Response) => {
 const updateSubscription = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const subscription = await generalsService.updateSubscription(id, req.body);
+    const subscription = await generalsService.updateSubscription(id as string, req.body);
 
     if (!subscription) {
       return res.status(httpStatus.NOT_FOUND).json(
@@ -72,7 +72,7 @@ const updateSubscription = async (req: Request, res: Response) => {
 const deleteSubscription = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const subscription = await generalsService.deleteSubscription(id);
+    const subscription = await generalsService.deleteSubscription(id as string);
 
     if (!subscription) {
       return res.status(httpStatus.NOT_FOUND).json(
@@ -136,7 +136,7 @@ const getAllTestimonials = async (req: Request, res: Response) => {
 const updateTestimonial = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const testimonial = await generalsService.updateTestimonial(id, req.body);
+    const testimonial = await generalsService.updateTestimonial(id as string, req.body);
 
     if (!testimonial) {
       return res.status(httpStatus.NOT_FOUND).json(
@@ -165,7 +165,7 @@ const updateTestimonial = async (req: Request, res: Response) => {
 const deleteTestimonial = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const testimonial = await generalsService.deleteTestimonial(id);
+    const testimonial = await generalsService.deleteTestimonial(id as string);
 
     if (!testimonial) {
       return res.status(httpStatus.NOT_FOUND).json(

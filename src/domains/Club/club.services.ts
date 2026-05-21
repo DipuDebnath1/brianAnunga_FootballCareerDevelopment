@@ -1,4 +1,5 @@
-import Agent, { IAMAgent } from "./club.model";
+
+import Agent, { IAMAgent } from "../Agent/agent.model";
 
 // Create a new agent profile
 const createAgentProfile = async (agentData: Partial<IAMAgent>) => {
@@ -9,12 +10,12 @@ const createAgentProfile = async (agentData: Partial<IAMAgent>) => {
 // Update agent profile
 const updateAgentProfile = async (
   agentId: string,
-  updateData: Partial<IAMAgent>
+  updateData: Partial<IAMAgent>,
 ) => {
   return await Agent.findOneAndUpdate(
     { user_id: agentId },
     { $set: updateData },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 };
 
@@ -26,7 +27,7 @@ const getAgentByUserId = async (userId: string) => {
 // Get all agents with optional filters for area of expertise
 const getAllAgents = async (
   areaOfExpertise?: string,
-  experienceYears?: number
+  experienceYears?: number,
 ) => {
   let query = {};
 

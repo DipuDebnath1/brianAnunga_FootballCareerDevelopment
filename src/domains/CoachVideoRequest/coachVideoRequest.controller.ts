@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import coachVideoRequestService from "./CoachVideoRequest.services";
 import { handleError } from "../../lib/errorsHandle";
 import httpStatus from "http-status";
 import { response } from "../../lib/response";
 import { ProtectedRequest } from "../../types/protected-request";
+import coachVideoRequestService from "./coachVideoRequest.services";
 
 // Create a new coach video request
 const createCoachVideoRequest = async (

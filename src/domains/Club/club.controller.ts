@@ -59,7 +59,7 @@ const updateClub = async (req: ProtectedRequest, res: Response) => {
     const { clubId } = req.params;
     const updateData = req.body;
 
-    const updatedClub = await clubService.updateClub(clubId, updateData);
+    const updatedClub = await clubService.updateClub(clubId as string, updateData);
 
     if (!updatedClub) {
       return res.status(httpStatus.NOT_FOUND).json(
@@ -91,7 +91,7 @@ const getClubById = async (req: Request, res: Response) => {
   try {
     const { clubId } = req.params;
 
-    const club = await clubService.getClubById(clubId);
+    const club = await clubService.getClubById(clubId as string);
 
     if (!club) {
       return res.status(httpStatus.NOT_FOUND).json(
@@ -123,7 +123,7 @@ const getClubByName = async (req: Request, res: Response) => {
   try {
     const { name } = req.params;
 
-    const club = await clubService.getClubByName(name);
+    const club = await clubService.getClubByName(name as string);
 
     if (!club) {
       return res.status(httpStatus.NOT_FOUND).json(
@@ -180,7 +180,7 @@ const deleteClub = async (req: ProtectedRequest, res: Response) => {
   try {
     const { clubId } = req.params;
 
-    const deletedClub = await clubService.deleteClub(clubId);
+    const deletedClub = await clubService.deleteClub(clubId as string);
 
     if (!deletedClub) {
       return res.status(httpStatus.NOT_FOUND).json(

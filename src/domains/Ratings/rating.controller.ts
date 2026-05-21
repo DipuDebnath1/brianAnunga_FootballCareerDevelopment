@@ -81,7 +81,7 @@ const updateRating = async (req: ProtectedRequest, res: Response) => {
     }
 
     // First get the rating to check the profileId and ratingType
-    const existingRating = await ratingService.getRatingById(ratingId);
+    const existingRating = await ratingService.getRatingById(ratingId as string);
     if (!existingRating) {
       return res.status(httpStatus.NOT_FOUND).json(
         response({
@@ -142,7 +142,7 @@ const getRatingById = async (req: Request, res: Response) => {
   try {
     const { ratingId } = req.params;
 
-    const rating = await ratingService.getRatingById(ratingId);
+    const rating = await ratingService.getRatingById(ratingId as string);
 
     if (!rating) {
       return res.status(httpStatus.NOT_FOUND).json(
@@ -176,7 +176,7 @@ const getRatingsByProfile = async (req: Request, res: Response) => {
     const { page = 1, limit = 10 } = req.query;
 
     // Validate ratingType is either 'coach' or 'agent'
-    if (!["coach", "agent"].includes(ratingType)) {
+    if (!["coach", "agent"].includes(ratingType as string)) {
       return res.status(httpStatus.BAD_REQUEST).json(
         response({
           message: "Rating type must be either 'coach' or 'agent'",
@@ -188,7 +188,7 @@ const getRatingsByProfile = async (req: Request, res: Response) => {
     }
 
     const ratings = await ratingService.getRatingsByProfile(
-      profileId,
+      profileId as string,
       ratingType as RatingType,
       parseInt(page as string),
       parseInt(limit as string)
@@ -196,7 +196,7 @@ const getRatingsByProfile = async (req: Request, res: Response) => {
 
     // Get average rating and count
     const avgRatingData = await ratingService.getAverageRatingByProfile(
-      profileId,
+      profileId as string,
       ratingType as RatingType
     );
 
@@ -223,7 +223,7 @@ const getRatingsByUser = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
-    const ratings = await ratingService.getRatingsByUser(userId);
+    const ratings = await ratingService.getRatingsByUser(userId as string);
 
     res.status(httpStatus.OK).json(
       response({
@@ -245,7 +245,7 @@ const getAverageRatingByProfile = async (req: Request, res: Response) => {
     const { profileId, ratingType } = req.params;
 
     // Validate ratingType is either 'coach' or 'agent'
-    if (!["coach", "agent"].includes(ratingType)) {
+    if (!["coach", "agent"].includes(ratingType as string )) {
       return res.status(httpStatus.BAD_REQUEST).json(
         response({
           message: "Rating type must be either 'coach' or 'agent'",
@@ -257,7 +257,7 @@ const getAverageRatingByProfile = async (req: Request, res: Response) => {
     }
 
     const avgRatingData = await ratingService.getAverageRatingByProfile(
-      profileId,
+      profileId as string,
       ratingType as RatingType
     );
 
@@ -282,7 +282,7 @@ const deleteRating = async (req: ProtectedRequest, res: Response) => {
     const { ratingId } = req.params;
 
     // First get the rating to check the profileId and ratingType
-    const rating = await ratingService.getRatingById(ratingId);
+    const rating = await ratingService.getRatingById(ratingId as string);
     if (!rating) {
       return res.status(httpStatus.NOT_FOUND).json(
         response({

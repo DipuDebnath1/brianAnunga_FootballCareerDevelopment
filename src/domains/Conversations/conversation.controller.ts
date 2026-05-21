@@ -61,7 +61,7 @@ const getConversationById = async (req: ProtectedRequest, res: Response) => {
     const { conversationId } = req.params;
 
     const conversation = await conversationService.getConversationById(
-      conversationId
+      conversationId as string
     );
 
     if (!conversation) {

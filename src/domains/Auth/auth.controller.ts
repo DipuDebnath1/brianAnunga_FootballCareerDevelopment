@@ -13,7 +13,7 @@ const register = async (req: Request, res: Response) => {
         status: "OK",
         statusCode: httpStatus.OK,
         data: user,
-      })
+      }),
     );
   } catch (error) {
     const handledError = handleError(error); // Handle the error using the utility
@@ -30,7 +30,7 @@ const verifyEmail = async (req: Request, res: Response) => {
         message: "Verification Successful",
         status: "OK",
         statusCode: httpStatus.OK,
-      })
+      }),
     );
   } catch (error) {
     const handledError = handleError(error); // Handle the error using the utility
@@ -48,7 +48,7 @@ const login = async (req: Request, res: Response) => {
         status: "OK",
         statusCode: httpStatus.OK,
         data: user,
-      })
+      }),
     );
   } catch (error) {
     const handledError = handleError(error); // Handle the error using the utility
@@ -65,7 +65,7 @@ const forgotPassword = async (req: Request, res: Response) => {
         status: "OK",
         statusCode: httpStatus.OK,
         data: user,
-      })
+      }),
     );
   } catch (error) {
     const handledError = handleError(error); // Handle the error using the utility
@@ -82,7 +82,7 @@ const resetPassword = async (req: Request, res: Response) => {
         status: "OK",
         statusCode: httpStatus.OK,
         data: user,
-      })
+      }),
     );
   } catch (error) {
     const handledError = handleError(error); // Handle the error using the utility
@@ -99,7 +99,7 @@ const resendVerification = async (req: Request, res: Response) => {
         status: "OK",
         statusCode: httpStatus.OK,
         data: user,
-      })
+      }),
     );
   } catch (error) {
     const handledError = handleError(error); // Handle the error using the utility
@@ -109,14 +109,14 @@ const resendVerification = async (req: Request, res: Response) => {
 
 const deleteUser = async (req: Request, res: Response) => {
   try {
-    const user = await authService.deleteUser(req.params.userId);
+    const user = await authService.deleteUser(req.params.userId as string);
     res.status(httpStatus.OK).json(
       response({
         message: "User Delete Successful",
         status: "OK",
         statusCode: httpStatus.OK,
         data: user,
-      })
+      }),
     );
   } catch (error) {
     const handledError = handleError(error); // Handle the error using the utility
@@ -137,7 +137,7 @@ const logout = async (req: Request, res: Response) => {
         status: "OK",
         statusCode: httpStatus.OK,
         data: user,
-      })
+      }),
     );
   } catch (error) {
     const handledError = handleError(error); // Handle the error using the utility

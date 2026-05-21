@@ -63,7 +63,7 @@ const getMessagesByConversation = async (
     // Verify that the user is part of this conversation
     const conversation = await import(
       "../Conversations/conversation.service"
-    ).then((service) => service.default.getConversationById(conversationId));
+    ).then((service) => service.default.getConversationById(conversationId as string));
 
     const userId = req.user?._id as string;
     if (
@@ -82,7 +82,7 @@ const getMessagesByConversation = async (
     }
 
     const messages = await messageService.getMessagesByConversation(
-      conversationId,
+      conversationId as string,
       parseInt(skip as string),
       parseInt(limit as string)
     );
@@ -109,7 +109,7 @@ const updateMessage = async (req: ProtectedRequest, res: Response) => {
     const { content } = req.body;
 
     const updatedMessage = await messageService.updateMessage(
-      messageId,
+      messageId as string,
       content,
       userId
     );
