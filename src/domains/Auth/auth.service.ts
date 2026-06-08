@@ -1,148 +1,232 @@
 import { sendEmail } from "../../lib/mail.service";
 import User, { IAMUser } from "../User/user.model";
-import { createRefreshToken, createToken } from "./auth.token.services";
+import {
+  createRefreshToken,
+  createToken,
+  UserTokenPayload,
+  verifyRefreshToken,
+} from "./auth.token.services";
 
-// Register User
+type OtpPurpose = "verify" | "reset";
+
+const generateOtp = (): number =>
+  Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
+
+const buildTokenPayload = (user: IAMUser): UserTokenPayload => ({
+  userId: user._id.toString(),
+  role: user.role,
+  name: user.name,
+  email: user.email,
+  image: user.image,
+});
+
+export const sanitizeUser = (user: IAMUser) => ({
+  _id: user._id,
+  name: user.name,
+  email: user.email,
+  image: user.image,
+  role: user.role,
+  isEmailVerified: user.isEmailVerified,
+});
+
+const issueTokens = (user: IAMUser) => {
+  const payload = buildTokenPayload(user);
+  const accessToken = createToken(
+    payload,
+    process.env.JWT_SECRET!,
+    process.env.JWT_EXPIRE_TIME!
+  );
+  const refreshToken = createRefreshToken(payload);
+  return { accessToken, refreshToken };
+};
+
 const register = async (userData: {
   name: string;
   email: string;
   password: string;
+  role: string;
 }) => {
-  const { email, password, name } = userData;
+  const { email, password, name, role } = userData;
 
-  // Check if email or phone number already exists
-  const existingUser = await User.findOne({
-    $or: [{ email }],
-  });
+  const existingUser = await User.findOne({ email, isDeleted: false });
   if (existingUser) throw new Error("Email is already taken");
 
-  const oneTimeCode =
-    Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
+  const oneTimeCode = generateOtp();
   const newUser = new User({
     name,
     email,
     password,
-    oneTimeCode: oneTimeCode, // Generate a one-time code for email verification
+    role,
+    oneTimeCode,
+    otpPurpose: "verify" as OtpPurpose,
   });
 
-  // Save User to DB
   await newUser.save();
 
-  // Send Email Verification
-  const verificationLink = `${process.env.FRONTEND_URL}/verify-email?code=${newUser.oneTimeCode}`;
+  const verificationLink = `${process.env.FRONTEND_URL}/verify-email?code=${oneTimeCode}&email=${encodeURIComponent(email)}`;
   const emailText = `Please click the following link to verify your email address: ${verificationLink}`;
   await sendEmail(newUser.email, "Verify Your Email Address", emailText);
 
-  return newUser;
+  return sanitizeUser(newUser);
 };
 
 const verifyEmail = async (email: string, code: number) => {
-  // Find the user by email
-  const user = await User.findOne({ email }).select("name email oneTimeCode");
+  const user = await User.findOne({ email, isDeleted: false }).select(
+    "name email oneTimeCode otpPurpose isEmailVerified"
+  );
   if (!user) throw new Error("User not found");
+  if (user.isEmailVerified) throw new Error("Email is already verified");
+  if (user.otpPurpose !== "verify")
+    throw new Error("Invalid verification code");
   if (user.oneTimeCode !== code) throw new Error("Invalid verification code");
+
   user.isEmailVerified = true;
   user.oneTimeCode = null;
+  user.otpPurpose = null;
   await user.save();
-  return "Email Verification SuccessFul";
+
+  return { message: "Email verification successful" };
 };
 
-// Login User
-const loginUser = async (email: string, password: string) => {
-  const user = await User.findOne({ email }).select(
-    "name email image password role isEmailVerified"
+const loginUser = async (
+  email: string,
+  password: string,
+  fcmToken?: string
+) => {
+  const user = await User.findOne({ email, isDeleted: false }).select(
+    "name email image password role isEmailVerified fcmToken isDeleted"
   );
 
-  if (!user) throw new Error("User not found");
+  if (!user) throw new Error("Invalid credentials");
 
-  // Check if the user's email is verified
-  if (!user.isEmailVerified)
+  if (!user.isEmailVerified) {
     throw new Error(
       "Email is not verified. Please check your email to verify."
     );
+  }
 
   const isMatch = await user.isPasswordMatch(password);
   if (!isMatch) throw new Error("Invalid credentials");
-  // Generate JWT tokens
-  const userDetails = {
-    userId: user._id.toString(),
-    role: user.role,
-    name: user.name,
-    email: user.email,
-    image: user.image,
-    password: user.password,
-  };
 
-  // Generate JWT tokens
-  const accessToken = createToken(
-    userDetails,
-    process.env.JWT_SECRET!,
-    process.env.JWT_EXPIRE_TIME!
-  );
+  if (fcmToken) {
+    user.fcmToken = fcmToken;
+    await user.save();
+  }
 
-  const refreshToken = createRefreshToken(userDetails);
+  const { accessToken, refreshToken } = issueTokens(user);
 
-  return { user, accessToken, refreshToken };
+  return { user: sanitizeUser(user), accessToken, refreshToken };
 };
 
-// Forgot Password
 const forgotPassword = async (email: string) => {
-  const user = (await User.findOne({ email })) as IAMUser;
+  const user = await User.findOne({ email, isDeleted: false });
   if (!user) throw new Error("User not found");
 
-  const resetCode = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
-
+  const resetCode = generateOtp();
   user.oneTimeCode = resetCode;
+  user.otpPurpose = "reset";
   await user.save();
 
-  const resetLink = `${process.env.FRONTEND_URL}/reset-password?code=${resetCode}`;
+  const resetLink = `${process.env.FRONTEND_URL}/reset-password?code=${resetCode}&email=${encodeURIComponent(email)}`;
   const emailText = `Please click the following link to reset your password: ${resetLink}`;
-  sendEmail(user.email, "Reset Your Password", emailText);
+  await sendEmail(user.email, "Reset Your Password", emailText);
 
   return { message: "Password reset email sent" };
 };
 
-// Reset Password
 const resetPassword = async (
   email: string,
   code: string,
   newPassword: string
 ) => {
-  const user = (await User.findOne({
+  const user = await User.findOne({
     email,
+    isDeleted: false,
     oneTimeCode: Number(code),
-  })) as IAMUser;
-  if (!user) {
-    throw new Error("Invalid reset code");
-  } else {
-    user.password = newPassword;
-    user.isResetPassword = true;
-    user.oneTimeCode = null;
-    await user.save();
+    otpPurpose: "reset",
+  });
 
-    return { message: "Password successfully reset" };
-  }
+  if (!user) throw new Error("Invalid reset code");
+
+  user.password = newPassword;
+  user.isResetPassword = true;
+  user.oneTimeCode = null;
+  user.otpPurpose = null;
+  await user.save();
+
+  return { message: "Password successfully reset" };
 };
 
-// Resend Verification Email
-const resendVerificationEmail = async (email: string) => {
-  const user = (await User.findOne({ email })) as IAMUser;
+const changePassword = async (
+  userId: string,
+  oldPassword: string,
+  newPassword: string
+) => {
+  const user = await User.findOne({ _id: userId, isDeleted: false });
   if (!user) throw new Error("User not found");
-  const oneTimeCode =
-    Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
-  user.oneTimeCode = oneTimeCode;
-  user.save();
 
-  const verificationLink = `${process.env.FRONTEND_URL}/verify-email?code=${oneTimeCode}`;
+  const isMatch = await user.isPasswordMatch(oldPassword);
+  if (!isMatch) throw new Error("Current password is incorrect");
+
+  user.password = newPassword;
+  await user.save();
+
+  return { message: "Password updated successfully" };
+};
+
+const resendVerificationEmail = async (email: string) => {
+  const user = await User.findOne({ email, isDeleted: false });
+  if (!user) throw new Error("User not found");
+  if (user.isEmailVerified) throw new Error("Email is already verified");
+
+  const oneTimeCode = generateOtp();
+  user.oneTimeCode = oneTimeCode;
+  user.otpPurpose = "verify";
+  await user.save();
+
+  const verificationLink = `${process.env.FRONTEND_URL}/verify-email?code=${oneTimeCode}&email=${encodeURIComponent(email)}`;
   const emailText = `Please click the following link to verify your email address: ${verificationLink}`;
-  sendEmail(user.email, "Verify Your Email Address", emailText);
+  await sendEmail(user.email, "Verify Your Email Address", emailText);
 
   return { message: "Verification email resent" };
 };
 
-// Delete User
-const deleteUser = async (userId: string) => {
-  const user = (await User.findById(userId)) as IAMUser;
+const refreshAccessToken = async (refreshToken: string) => {
+  let payload: UserTokenPayload;
+  try {
+    payload = verifyRefreshToken(refreshToken);
+  } catch {
+    throw new Error("Invalid or expired refresh token");
+  }
+
+  const user = await User.findOne({
+    _id: payload.userId,
+    isDeleted: false,
+  }).select("name email image role isEmailVerified");
+
+  if (!user || !user.isEmailVerified) {
+    throw new Error("Invalid or expired refresh token");
+  }
+
+  const accessToken = createToken(
+    buildTokenPayload(user),
+    process.env.JWT_SECRET!,
+    process.env.JWT_EXPIRE_TIME!
+  );
+
+  return { accessToken, user: sanitizeUser(user) };
+};
+
+const deleteUser = async (
+  targetUserId: string,
+  callerId: string,
+  callerRole: string
+) => {
+  if (callerRole !== "admin" && callerId !== targetUserId) {
+    throw new Error("Forbidden: you can only delete your own account");
+  }
+
+  const user = await User.findOne({ _id: targetUserId, isDeleted: false });
   if (!user) throw new Error("User not found");
 
   user.isDeleted = true;
@@ -151,20 +235,28 @@ const deleteUser = async (userId: string) => {
   return { message: "User deleted successfully" };
 };
 
-// Logout
-const logout = (refreshToken: string) => {
-  return { message: "User logged out" };
+const logout = async (refreshToken: string) => {
+  try {
+    verifyRefreshToken(refreshToken);
+  } catch {
+    throw new Error("Invalid or expired refresh token");
+  }
+
+  return { message: "Logged out successfully" };
 };
 
-const userService = {
+const authService = {
   register,
   verifyEmail,
   loginUser,
   forgotPassword,
   resetPassword,
+  changePassword,
   resendVerificationEmail,
+  refreshAccessToken,
   deleteUser,
   logout,
+  sanitizeUser,
 };
 
-export default userService;
+export default authService;

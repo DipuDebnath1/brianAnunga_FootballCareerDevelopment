@@ -2,10 +2,10 @@ import { Router } from "express";
 import authController from "./auth.controller";
 import validate from "../../middlewares/validation.middleware";
 import authValidator from "./auth.validation";
+import { authMiddleware } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
-// Auth Routes
 router.post(
   "/register",
   validate(authValidator.registerValidation),
@@ -37,12 +37,29 @@ router.post(
 );
 
 router.post(
+  "/change-password",
+  authMiddleware,
+  validate(authValidator.changePasswordValidation),
+  authController.changePassword
+);
+
+router.post(
+  "/refresh-token",
+  validate(authValidator.refreshTokenValidation),
+  authController.refreshToken
+);
+
+router.post(
   "/resend-verification",
   validate(authValidator.resendVerificationValidation),
   authController.resendVerification
 );
 
-router.delete("/delete/:userId", authController.deleteUser);
+router.delete(
+  "/delete/:userId",
+  authMiddleware,
+  authController.deleteUser
+);
 
 router.post("/logout", authController.logout);
 

@@ -11,6 +11,7 @@ export interface IAMUser extends Document {
   image: string;
   role: string;
   oneTimeCode: number | null;
+  otpPurpose: "verify" | "reset" | null;  // type of otp purpose
   isEmailVerified: boolean;
   isResetPassword: boolean;
   fcmToken: string;
@@ -60,6 +61,11 @@ const userSchema = new Schema<IAMUser>(
       default: "user",
     },
     oneTimeCode: { type: Number, default: null },
+    otpPurpose: {
+      type: String,
+      enum: ["verify", "reset", null],
+      default: null,
+    },
     isEmailVerified: { type: Boolean, default: false },
     isResetPassword: { type: Boolean, default: false },
     fcmToken: { type: String, default: null },

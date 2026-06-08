@@ -1,6 +1,7 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { ProtectedRequest } from "../types/protected-request";
+import { UserTokenPayload } from "../domains/Auth/auth.token.services";
 
 export const authMiddleware = (
   req: ProtectedRequest,
@@ -10,23 +11,25 @@ export const authMiddleware = (
   const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) {
-    return res.status(401).json({ error: "Unauthorized Access Denied 😐" });
+    return res.status(401).json({ error: "Unauthorized Access Denied" });
   }
 
   try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-    const user = {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET!
+    ) as UserTokenPayload;
+
+    req.user = {
       _id: decoded.userId,
       role: decoded.role,
       name: decoded.name,
       email: decoded.email,
-      password: decoded.password,
       image: decoded.image,
     };
-    req.user = user;
 
     next();
-  } catch (error) {
-    res.status(400).json({ error: "Invalid token" });
+  } catch {
+    res.status(401).json({ error: "Invalid or expired token" });
   }
 };

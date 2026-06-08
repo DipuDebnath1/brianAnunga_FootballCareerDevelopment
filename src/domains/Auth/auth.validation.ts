@@ -1,4 +1,5 @@
 import Joi from "joi";
+import { roles } from "../../config/roles";
 
 const registerValidation = Joi.object({
   name: Joi.string().min(3).required(),
@@ -10,7 +11,7 @@ const registerValidation = Joi.object({
     .required(),
   role: Joi.string()
     .required()
-    .valid("user", "player", "coach", "agents", "admin"),
+    .valid(...roles),
 });
 
 const verificationValidation = Joi.object({
@@ -21,18 +22,16 @@ const verificationValidation = Joi.object({
 const loginValidation = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().required(),
-  fcmToken: Joi.string(),
+  fcmToken: Joi.string().optional(),
 });
 
 const forgotPasswordValidation = Joi.object({
   email: Joi.string().email().required(),
 });
 
-// Reset Password Validation Schema
 const resetPasswordValidation = Joi.object({
   code: Joi.string().length(6).required(),
   email: Joi.string().email().required(),
-
   newPassword: Joi.string()
     .min(8)
     .pattern(/[a-zA-Z]/)
@@ -40,7 +39,23 @@ const resetPasswordValidation = Joi.object({
     .required(),
 });
 
-// Resend Verification Email Validation Schema
+const changePasswordValidation = Joi.object({
+  oldPassword: Joi.string().required(),
+  newPassword: Joi.string()
+    .min(8)
+    .pattern(/[a-zA-Z]/)
+    .pattern(/\d/)
+    .required(),
+  confirmPassword: Joi.string()
+    .valid(Joi.ref("newPassword"))
+    .required()
+    .messages({ "any.only": "Confirm password must match new password" }),
+});
+
+const refreshTokenValidation = Joi.object({
+  refreshToken: Joi.string().required(),
+});
+
 const resendVerificationValidation = Joi.object({
   email: Joi.string().email().required(),
 });
@@ -50,6 +65,8 @@ const authValidator = {
   loginValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
+  changePasswordValidation,
+  refreshTokenValidation,
   resendVerificationValidation,
   verificationValidation,
 };
