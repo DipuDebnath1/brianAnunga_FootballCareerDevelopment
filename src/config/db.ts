@@ -1,18 +1,18 @@
-import dotenv from "dotenv";
 import mongoose from "mongoose";
-
-dotenv.config();
-const MongodbURL = process.env.DATABASE_URL;
+import config from "./index";
+import logger from "../lib/logger";
 
 const connectionToDb = async () => {
-  if (!MongodbURL) {
+  if (!config.database.url) {
+    logger.error("DATABASE_URL is not defined in environment variables");
     process.exit(1);
   }
+
   try {
-    await mongoose.connect(MongodbURL);
-    console.log("MongoDB Server Connected");
+    await mongoose.connect(config.database.url);
+    logger.info("MongoDB Server Connected");
   } catch (error) {
-    console.error("MongoDB connected Error", error);
+    logger.error("MongoDB connected Error", error);
     process.exit(1);
   }
 };

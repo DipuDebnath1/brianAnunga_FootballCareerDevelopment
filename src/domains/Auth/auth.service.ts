@@ -1,3 +1,6 @@
+import httpStatus from "http-status";
+import AppError from "../../ErrorHandler/AppError";
+import config from "../../config/index";
 import { sendEmail } from "../../lib/mail.service";
 import User, { IAMUser } from "../User/user.model";
 import {
@@ -33,8 +36,8 @@ const issueTokens = (user: IAMUser) => {
   const payload = buildTokenPayload(user);
   const accessToken = createToken(
     payload,
-    process.env.JWT_SECRET!,
-    process.env.JWT_EXPIRE_TIME!
+    config.jwt.secret,
+    config.jwt.expiresIn
   );
   const refreshToken = createRefreshToken(payload);
   return { accessToken, refreshToken };
@@ -47,38 +50,50 @@ const register = async (userData: {
   role: string;
 }) => {
   const { email, password, name, role } = userData;
+  let data: IAMUser;
 
   const existingUser = await User.findOne({ email, isDeleted: false });
-  if (existingUser) throw new Error("Email is already taken");
+  if (existingUser) {
+    if (existingUser.isEmailVerified) {
+      throw new AppError(httpStatus.CONFLICT, "Email is already taken");
+    } else {
+      existingUser.oneTimeCode = generateOtp();
+      existingUser.otpPurpose = "verify" as OtpPurpose;
+      await existingUser.save();
+      data = existingUser;
+    }
+  }
+  else {
+    const oneTimeCode = generateOtp();
+    const newUser = new User({
+      name,
+      email,
+      password,
+      role,
+      oneTimeCode,
+      otpPurpose: "verify" as OtpPurpose,
+    });
+  
+    await newUser.save();
+    data = newUser;
+  }
 
-  const oneTimeCode = generateOtp();
-  const newUser = new User({
-    name,
-    email,
-    password,
-    role,
-    oneTimeCode,
-    otpPurpose: "verify" as OtpPurpose,
-  });
-
-  await newUser.save();
-
-  const verificationLink = `${process.env.FRONTEND_URL}/verify-email?code=${oneTimeCode}&email=${encodeURIComponent(email)}`;
-  const emailText = `Please click the following link to verify your email address: ${verificationLink}`;
-  await sendEmail(newUser.email, "Verify Your Email Address", emailText);
-
-  return sanitizeUser(newUser);
+  return sanitizeUser(data);
 };
 
 const verifyEmail = async (email: string, code: number) => {
   const user = await User.findOne({ email, isDeleted: false }).select(
     "name email oneTimeCode otpPurpose isEmailVerified"
   );
-  if (!user) throw new Error("User not found");
-  if (user.isEmailVerified) throw new Error("Email is already verified");
-  if (user.otpPurpose !== "verify")
-    throw new Error("Invalid verification code");
-  if (user.oneTimeCode !== code) throw new Error("Invalid verification code");
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
+  if (user.isEmailVerified) {
+    throw new AppError(httpStatus.CONFLICT, "Email is already verified");
+  }
+  if (user.otpPurpose !== "verify" || user.oneTimeCode !== code) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid verification code");
+  }
 
   user.isEmailVerified = true;
   user.oneTimeCode = null;
@@ -97,16 +112,21 @@ const loginUser = async (
     "name email image password role isEmailVerified fcmToken isDeleted"
   );
 
-  if (!user) throw new Error("Invalid credentials");
+  if (!user) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid credentials");
+  }
 
   if (!user.isEmailVerified) {
-    throw new Error(
+    throw new AppError(
+      httpStatus.FORBIDDEN,
       "Email is not verified. Please check your email to verify."
     );
   }
 
   const isMatch = await user.isPasswordMatch(password);
-  if (!isMatch) throw new Error("Invalid credentials");
+  if (!isMatch) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid credentials");
+  }
 
   if (fcmToken) {
     user.fcmToken = fcmToken;
@@ -120,14 +140,16 @@ const loginUser = async (
 
 const forgotPassword = async (email: string) => {
   const user = await User.findOne({ email, isDeleted: false });
-  if (!user) throw new Error("User not found");
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
 
   const resetCode = generateOtp();
   user.oneTimeCode = resetCode;
   user.otpPurpose = "reset";
   await user.save();
 
-  const resetLink = `${process.env.FRONTEND_URL}/reset-password?code=${resetCode}&email=${encodeURIComponent(email)}`;
+  const resetLink = `${config.frontendUrl}/reset-password?code=${resetCode}&email=${encodeURIComponent(email)}`;
   const emailText = `Please click the following link to reset your password: ${resetLink}`;
   await sendEmail(user.email, "Reset Your Password", emailText);
 
@@ -146,7 +168,9 @@ const resetPassword = async (
     otpPurpose: "reset",
   });
 
-  if (!user) throw new Error("Invalid reset code");
+  if (!user) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid reset code");
+  }
 
   user.password = newPassword;
   user.isResetPassword = true;
@@ -163,10 +187,14 @@ const changePassword = async (
   newPassword: string
 ) => {
   const user = await User.findOne({ _id: userId, isDeleted: false });
-  if (!user) throw new Error("User not found");
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
 
   const isMatch = await user.isPasswordMatch(oldPassword);
-  if (!isMatch) throw new Error("Current password is incorrect");
+  if (!isMatch) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Current password is incorrect");
+  }
 
   user.password = newPassword;
   await user.save();
@@ -176,15 +204,19 @@ const changePassword = async (
 
 const resendVerificationEmail = async (email: string) => {
   const user = await User.findOne({ email, isDeleted: false });
-  if (!user) throw new Error("User not found");
-  if (user.isEmailVerified) throw new Error("Email is already verified");
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
+  if (user.isEmailVerified) {
+    throw new AppError(httpStatus.CONFLICT, "Email is already verified");
+  }
 
   const oneTimeCode = generateOtp();
   user.oneTimeCode = oneTimeCode;
   user.otpPurpose = "verify";
   await user.save();
 
-  const verificationLink = `${process.env.FRONTEND_URL}/verify-email?code=${oneTimeCode}&email=${encodeURIComponent(email)}`;
+  const verificationLink = `${config.frontendUrl}/verify-email?code=${oneTimeCode}&email=${encodeURIComponent(email)}`;
   const emailText = `Please click the following link to verify your email address: ${verificationLink}`;
   await sendEmail(user.email, "Verify Your Email Address", emailText);
 
@@ -196,7 +228,7 @@ const refreshAccessToken = async (refreshToken: string) => {
   try {
     payload = verifyRefreshToken(refreshToken);
   } catch {
-    throw new Error("Invalid or expired refresh token");
+    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid or expired refresh token");
   }
 
   const user = await User.findOne({
@@ -205,13 +237,13 @@ const refreshAccessToken = async (refreshToken: string) => {
   }).select("name email image role isEmailVerified");
 
   if (!user || !user.isEmailVerified) {
-    throw new Error("Invalid or expired refresh token");
+    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid or expired refresh token");
   }
 
   const accessToken = createToken(
     buildTokenPayload(user),
-    process.env.JWT_SECRET!,
-    process.env.JWT_EXPIRE_TIME!
+    config.jwt.secret,
+    config.jwt.expiresIn
   );
 
   return { accessToken, user: sanitizeUser(user) };
@@ -223,11 +255,16 @@ const deleteUser = async (
   callerRole: string
 ) => {
   if (callerRole !== "admin" && callerId !== targetUserId) {
-    throw new Error("Forbidden: you can only delete your own account");
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "Forbidden: you can only delete your own account"
+    );
   }
 
   const user = await User.findOne({ _id: targetUserId, isDeleted: false });
-  if (!user) throw new Error("User not found");
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
 
   user.isDeleted = true;
   await user.save();
@@ -239,7 +276,7 @@ const logout = async (refreshToken: string) => {
   try {
     verifyRefreshToken(refreshToken);
   } catch {
-    throw new Error("Invalid or expired refresh token");
+    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid or expired refresh token");
   }
 
   return { message: "Logged out successfully" };

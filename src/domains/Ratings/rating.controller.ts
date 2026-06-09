@@ -1,386 +1,224 @@
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import mongoose from "mongoose";
-import ratingService from "./rating.service";
-import { handleError } from "../../lib/errorsHandle";
 import httpStatus from "http-status";
-import { response } from "../../lib/response";
+import AppError from "../../ErrorHandler/AppError";
+import catchAsync from "../../utills/catchAsync";
+import sendResponse from "../../utills/sendResponse";
 import { ProtectedRequest } from "../../types/protected-request";
+import ratingService from "./rating.service";
 import { RatingType } from "./rating.model";
 
-// Create a new rating
-const createRating = async (req: ProtectedRequest, res: Response) => {
-  try {
-    const userId = req.user?._id as string;
+const assertRatingType = (ratingType: string): RatingType => {
+  if (!["coach", "agent"].includes(ratingType)) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Rating type must be either 'coach' or 'agent'");
+  }
+  return ratingType as RatingType;
+};
+
+const createRating: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
     const { rating, review, ratingType, profileId } = req.body;
 
-    // Validate rating is between 1 and 5
     if (rating < 1 || rating > 5) {
-      return res.status(httpStatus.BAD_REQUEST).json(
-        response({
-          message: "Rating must be between 1 and 5",
-          status: "ERROR",
-          statusCode: httpStatus.BAD_REQUEST,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.BAD_REQUEST, "Rating must be between 1 and 5");
     }
 
-    // Validate ratingType is either 'coach' or 'agent'
-    if (!["coach", "agent"].includes(ratingType)) {
-      return res.status(httpStatus.BAD_REQUEST).json(
-        response({
-          message: "Rating type must be either 'coach' or 'agent'",
-          status: "ERROR",
-          statusCode: httpStatus.BAD_REQUEST,
-          data: {},
-        })
-      );
-    }
+    assertRatingType(ratingType);
 
-    const ratingData = {
+    const newRating = await ratingService.createRating({
       rating,
       review,
       ratingType: ratingType as RatingType,
       profileId: new mongoose.Types.ObjectId(profileId),
-      userId: new mongoose.Types.ObjectId(userId),
-    };
+      userId: new mongoose.Types.ObjectId(user!._id),
+    });
 
-    const newRating = await ratingService.createRating(ratingData);
-
-    res.status(httpStatus.CREATED).json(
-      response({
-        message: "Rating created successfully",
-        status: "OK",
-        statusCode: httpStatus.CREATED,
-        data: newRating,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.CREATED,
+      success: true,
+      message: "Rating created successfully",
+      data: newRating,
+    });
   }
-};
+);
 
-// Update a rating
-const updateRating = async (req: ProtectedRequest, res: Response) => {
-  try {
-    const userId = req.user?._id as string;
+const updateRating: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
     const { ratingId } = req.params;
     const { rating, review } = req.body;
 
-    // Validate rating is between 1 and 5
     if (rating !== undefined && (rating < 1 || rating > 5)) {
-      return res.status(httpStatus.BAD_REQUEST).json(
-        response({
-          message: "Rating must be between 1 and 5",
-          status: "ERROR",
-          statusCode: httpStatus.BAD_REQUEST,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.BAD_REQUEST, "Rating must be between 1 and 5");
     }
 
-    // First get the rating to check the profileId and ratingType
     const existingRating = await ratingService.getRatingById(ratingId as string);
     if (!existingRating) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Rating not found",
-          status: "ERROR",
-          statusCode: httpStatus.NOT_FOUND,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.NOT_FOUND, "Rating not found");
     }
 
-    // Check if the user is the owner of the rating
-    if (existingRating.userId.toString() !== userId) {
-      return res.status(httpStatus.FORBIDDEN).json(
-        response({
-          message: "You can only update your own ratings",
-          status: "ERROR",
-          statusCode: httpStatus.FORBIDDEN,
-          data: {},
-        })
-      );
+    if (existingRating.userId.toString() !== user!._id) {
+      throw new AppError(httpStatus.FORBIDDEN, "You can only update your own ratings");
     }
 
     const updatedRating = await ratingService.updateRating(
-      userId,
+      user!._id,
       existingRating.profileId.toString(),
       existingRating.ratingType,
       { rating, review }
     );
 
     if (!updatedRating) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Rating not found",
-          status: "ERROR",
-          statusCode: httpStatus.NOT_FOUND,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.NOT_FOUND, "Rating not found");
     }
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Rating updated successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: updatedRating,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Rating updated successfully",
+      data: updatedRating,
+    });
   }
-};
+);
 
-// Get rating by ID
-const getRatingById = async (req: Request, res: Response) => {
-  try {
-    const { ratingId } = req.params;
-
-    const rating = await ratingService.getRatingById(ratingId as string);
+const getRatingById: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const rating = await ratingService.getRatingById(req.params.ratingId as string);
 
     if (!rating) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Rating not found",
-          status: "ERROR",
-          statusCode: httpStatus.NOT_FOUND,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.NOT_FOUND, "Rating not found");
     }
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Rating retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: rating,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Rating retrieved successfully",
+      data: rating,
+    });
   }
-};
+);
 
-// Get all ratings for a specific profile (coach or agent)
-const getRatingsByProfile = async (req: Request, res: Response) => {
-  try {
+const getRatingsByProfile: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
     const { profileId, ratingType } = req.params;
-    const { page = 1, limit = 10 } = req.query;
+    const { page = "1", limit = "10" } = req.query;
 
-    // Validate ratingType is either 'coach' or 'agent'
-    if (!["coach", "agent"].includes(ratingType as string)) {
-      return res.status(httpStatus.BAD_REQUEST).json(
-        response({
-          message: "Rating type must be either 'coach' or 'agent'",
-          status: "ERROR",
-          statusCode: httpStatus.BAD_REQUEST,
-          data: {},
-        })
-      );
-    }
+    const type = assertRatingType(ratingType as string);
 
     const ratings = await ratingService.getRatingsByProfile(
       profileId as string,
-      ratingType as RatingType,
-      parseInt(page as string),
-      parseInt(limit as string)
+      type,
+      parseInt(page as string, 10),
+      parseInt(limit as string, 10)
     );
 
-    // Get average rating and count
     const avgRatingData = await ratingService.getAverageRatingByProfile(
       profileId as string,
-      ratingType as RatingType
+      type
     );
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Ratings retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: {
-          ratings,
-          averageRating: avgRatingData.averageRating,
-          totalRatings: avgRatingData.count,
-        },
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Ratings retrieved successfully",
+      data: {
+        ratings,
+        averageRating: avgRatingData.averageRating,
+        totalRatings: avgRatingData.count,
+      },
+    });
   }
-};
+);
 
-// Get all ratings by a specific user
-const getRatingsByUser = async (req: Request, res: Response) => {
-  try {
-    const { userId } = req.params;
+const getRatingsByUser: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const ratings = await ratingService.getRatingsByUser(req.params.userId as string);
 
-    const ratings = await ratingService.getRatingsByUser(userId as string);
-
-    res.status(httpStatus.OK).json(
-      response({
-        message: "User ratings retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: ratings,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "User ratings retrieved successfully",
+      data: ratings,
+    });
   }
-};
+);
 
-// Get average rating for a specific profile with count
-const getAverageRatingByProfile = async (req: Request, res: Response) => {
-  try {
+const getAverageRatingByProfile: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
     const { profileId, ratingType } = req.params;
-
-    // Validate ratingType is either 'coach' or 'agent'
-    if (!["coach", "agent"].includes(ratingType as string )) {
-      return res.status(httpStatus.BAD_REQUEST).json(
-        response({
-          message: "Rating type must be either 'coach' or 'agent'",
-          status: "ERROR",
-          statusCode: httpStatus.BAD_REQUEST,
-          data: {},
-        })
-      );
-    }
+    const type = assertRatingType(ratingType as string);
 
     const avgRatingData = await ratingService.getAverageRatingByProfile(
       profileId as string,
-      ratingType as RatingType
+      type
     );
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Average rating retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: avgRatingData,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Average rating retrieved successfully",
+      data: avgRatingData,
+    });
   }
-};
+);
 
-// Delete a rating
-const deleteRating = async (req: ProtectedRequest, res: Response) => {
-  try {
-    const userId = req.user?._id as string;
-    const { ratingId } = req.params;
+const deleteRating: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
+    const rating = await ratingService.getRatingById(req.params.ratingId as string);
 
-    // First get the rating to check the profileId and ratingType
-    const rating = await ratingService.getRatingById(ratingId as string);
     if (!rating) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Rating not found",
-          status: "ERROR",
-          statusCode: httpStatus.NOT_FOUND,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.NOT_FOUND, "Rating not found");
     }
 
-    // Check if the user is the owner of the rating
-    if (rating.userId.toString() !== userId) {
-      return res.status(httpStatus.FORBIDDEN).json(
-        response({
-          message: "You can only delete your own ratings",
-          status: "ERROR",
-          statusCode: httpStatus.FORBIDDEN,
-          data: {},
-        })
-      );
+    if (rating.userId.toString() !== user!._id) {
+      throw new AppError(httpStatus.FORBIDDEN, "You can only delete your own ratings");
     }
 
     const deletedRating = await ratingService.deleteRating(
-      userId,
+      user!._id,
       rating.profileId.toString(),
       rating.ratingType
     );
 
     if (!deletedRating) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Rating not found",
-          status: "ERROR",
-          statusCode: httpStatus.NOT_FOUND,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.NOT_FOUND, "Rating not found");
     }
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Rating deleted successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: deletedRating,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Rating deleted successfully",
+      data: deletedRating,
+    });
   }
-};
+);
 
-// Get all ratings with optional filters
-const getAllRatings = async (req: Request, res: Response) => {
-  try {
-    const {
-      ratingType,
-      minRating,
-      maxRating,
-      page = 1,
-      limit = 10,
-    } = req.query;
+const getAllRatings: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { ratingType, minRating, maxRating, page = "1", limit = "10" } = req.query;
 
-    // Validate ratingType if provided
     if (ratingType && !["coach", "agent"].includes(ratingType as string)) {
-      return res.status(httpStatus.BAD_REQUEST).json(
-        response({
-          message: "Rating type must be either 'coach' or 'agent'",
-          status: "ERROR",
-          statusCode: httpStatus.BAD_REQUEST,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.BAD_REQUEST, "Rating type must be either 'coach' or 'agent'");
     }
 
     const ratings = await ratingService.getAllRatings(
       ratingType as RatingType,
-      minRating ? parseInt(minRating as string) : undefined,
-      maxRating ? parseInt(maxRating as string) : undefined,
-      parseInt(page as string),
-      parseInt(limit as string)
+      minRating ? parseInt(minRating as string, 10) : undefined,
+      maxRating ? parseInt(maxRating as string, 10) : undefined,
+      parseInt(page as string, 10),
+      parseInt(limit as string, 10)
     );
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "All ratings retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: ratings,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "All ratings retrieved successfully",
+      data: ratings,
+    });
   }
-};
+);
 
 const ratingController = {
   createRating,

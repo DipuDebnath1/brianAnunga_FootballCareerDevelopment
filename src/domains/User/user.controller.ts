@@ -1,81 +1,63 @@
-import { Request, Response } from "express";
-import userService from "./user.services";
-import { handleError } from "../../lib/errorsHandle";
+import { Request, RequestHandler, Response } from "express";
 import httpStatus from "http-status";
-import { response } from "../../lib/response";
+import AppError from "../../ErrorHandler/AppError";
+import catchAsync from "../../utills/catchAsync";
+import sendResponse from "../../utills/sendResponse";
 import { ProtectedRequest } from "../../types/protected-request";
-import { ProtectedUser } from "../../types/types";
+import userService from "./user.services";
 
-const getAllUsers = async (req: Request, res: Response) => {
-  try {
+const getAllUsers: RequestHandler = catchAsync(
+  async (_req: Request, res: Response) => {
     const users = await userService.getAllUsers();
-    res.status(httpStatus.CREATED).json(
-      response({
-        message: "Create Notification",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: users,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error); // Handle the error using the utility
-    res.status(500).json({ error: handledError.message });
-  }
-};
 
-const userDetails = async (req: ProtectedRequest, res: Response) => {
-  try {
-    const { user } = req;
-    const users = await userService.userDetails(user?._id as string);
-
-    res.status(httpStatus.CREATED).json(
-      response({
-        message: "User Details",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: users!,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error); // Handle the error using the utility
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Users retrieved successfully",
+      data: users,
+    });
   }
-};
+);
 
-const singleFileUpload = async (req: ProtectedRequest, res: Response) => {
-  try {
-    //  taking the path of the file console.log(req.file?.path);
-    res.status(httpStatus.CREATED).json(
-      response({
-        message: "User Details",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: {},
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
-  }
-};
+const userDetails: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
+    const details = await userService.userDetails(user!._id);
 
-const multipleFileUpload = async (req: ProtectedRequest, res: Response) => {
-  try {
-    //  taking the path of the file
-    console.log(req.files);
-    res.status(httpStatus.CREATED).json(
-      response({
-        message: "User Details",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: {},
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    if (!details) {
+      throw new AppError(httpStatus.NOT_FOUND, "User not found");
+    }
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "User details retrieved successfully",
+      data: details,
+    });
   }
-};
+);
+
+const singleFileUpload: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "File uploaded successfully",
+      data: { path: (req as ProtectedRequest & { file?: { path?: string } }).file?.path ?? "" },
+    });
+  }
+);
+
+const multipleFileUpload: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Files uploaded successfully",
+      data: { files: (req as ProtectedRequest & { files?: unknown }).files ?? {} },
+    });
+  }
+);
 
 const userController = {
   getAllUsers,

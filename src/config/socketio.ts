@@ -1,5 +1,6 @@
 import { Server as SocketIOServer } from "socket.io";
 import { Server } from "http";
+import logger from "../lib/logger";
 
 const setUpSocketIO = (server: Server) => {
   const io = new SocketIOServer(server, {
@@ -10,26 +11,22 @@ const setUpSocketIO = (server: Server) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("A New user Connected To Socket");
+    logger.info("A new user connected to socket");
 
-    // Listen for messages
     socket.on("message", (data) => {
-      console.log("Message from client:", data);
-      io.emit("message", { text: "Hello from the server!" }); // Broadcast to all clients
+      logger.info(`Message from client: ${JSON.stringify(data)}`);
+      io.emit("message", { text: "Hello from the server!" });
     });
 
-    // Handle disconnect
     socket.on("disconnect", () => {
-      console.log("A user disconnected");
+      logger.info("A user disconnected from socket");
     });
 
-    // Custom event example
     socket.on("joinRoom", (room) => {
       socket.join(room);
-      console.log(`User joined room: ${room}`);
+      logger.info(`User joined room: ${room}`);
     });
 
-    // Example: send a message to a specific room
     socket.on("sendToRoom", (room, message) => {
       socket.to(room).emit("message", { text: message });
     });

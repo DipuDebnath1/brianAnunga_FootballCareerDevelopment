@@ -1,3 +1,4 @@
+import { FilterQuery } from "mongoose";
 import CoachVideoRequest, { IAMCoachVideoRequest } from "./coachVideoRequest.model";
 import Coach from "../Coach/coach.model";
 
@@ -53,7 +54,7 @@ const getAllCoachVideoRequests = async (
   coachId?: string,
   status?: "pending" | "accept" | "decline" | "completed"
 ) => {
-  let query: any = {};
+  const query: FilterQuery<IAMCoachVideoRequest> = {};
 
   // Add filters if provided
   if (userId) {

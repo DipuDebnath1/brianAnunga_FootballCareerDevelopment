@@ -1,308 +1,135 @@
-import { Request, Response } from "express";
-import agentRequestService from "./agentRequest.services";
-import { handleError } from "../../lib/errorsHandle";
+import { Request, RequestHandler, Response } from "express";
 import httpStatus from "http-status";
-import { response } from "../../lib/response";
+import AppError from "../../ErrorHandler/AppError";
+import catchAsync from "../../utills/catchAsync";
+import sendResponse from "../../utills/sendResponse";
 import { ProtectedRequest } from "../../types/protected-request";
+import agentRequestService from "./agentRequest.services";
 
-// Create a new agent request
-const createAgentRequest = async (req: ProtectedRequest, res: Response) => {
-  try {
-    // Extract user ID from the authenticated request
-    const userId = req.user?._id as string;
+type AgentRequestStatus = "pending" | "accept" | "decline" | "completed";
+const VALID_STATUSES: AgentRequestStatus[] = ["pending", "accept", "decline", "completed"];
 
-    // Validate that agent_id is provided in the request body
+const createAgentRequest: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
+
     if (!req.body.agent_id) {
-      return res.status(httpStatus.BAD_REQUEST).json(
-        response({
-          message: "Agent ID is required",
-          status: "ERROR",
-          statusCode: httpStatus.BAD_REQUEST,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.BAD_REQUEST, "Agent ID is required");
     }
 
-    // Prepare agent request data with user ID
-    const agentRequestData = {
+    const newAgentRequest = await agentRequestService.createAgentRequest({
       ...req.body,
-      user_id: userId,
-    };
+      user_id: user!._id,
+    });
 
-    const newAgentRequest = await agentRequestService.createAgentRequest(
-      agentRequestData
-    );
-
-    res.status(httpStatus.CREATED).json(
-      response({
-        message: "Agent request created successfully",
-        status: "OK",
-        statusCode: httpStatus.CREATED,
-        data: newAgentRequest,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json(
-      response({
-        message: handledError.message,
-        status: "ERROR",
-        statusCode: 500,
-        data: {},
-      })
-    );
+    sendResponse(res, {
+      statusCode: httpStatus.CREATED,
+      success: true,
+      message: "Agent request created successfully",
+      data: newAgentRequest,
+    });
   }
-};
+);
 
-// Get agent requests by agent_id
-const getAgentRequestsByAgentId = async (
-  req: ProtectedRequest,
-  res: Response
-) => {
-  try {
-    const agentId = req.params.agentId as string;
-
-    // Validate that agentId is provided
-    if (!agentId) {
-      return res.status(httpStatus.BAD_REQUEST).json(
-        response({
-          message: "Agent ID is required in the URL parameter",
-          status: "ERROR",
-          statusCode: httpStatus.BAD_REQUEST,
-          data: {},
-        })
-      );
-    }
-
+const getAgentRequestsByAgentId: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
     const agentRequests = await agentRequestService.getAgentRequestsByAgentId(
-      agentId
+      req.params.agentId as string
     );
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Agent requests retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: agentRequests,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json(
-      response({
-        message: handledError.message,
-        status: "ERROR",
-        statusCode: 500,
-        data: {},
-      })
-    );
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Agent requests retrieved successfully",
+      data: agentRequests,
+    });
   }
-};
+);
 
-// Get agent requests by user_id
-const getAgentRequestsByUserId = async (
-  req: ProtectedRequest,
-  res: Response
-) => {
-  try {
-    const userId = req.user?._id as string;
+const getAgentRequestsByUserId: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
+    const agentRequests = await agentRequestService.getAgentRequestsByUserId(user!._id);
 
-    const agentRequests = await agentRequestService.getAgentRequestsByUserId(
-      userId
-    );
-
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Agent requests retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: agentRequests,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json(
-      response({
-        message: handledError.message,
-        status: "ERROR",
-        statusCode: 500,
-        data: {},
-      })
-    );
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Agent requests retrieved successfully",
+      data: agentRequests,
+    });
   }
-};
+);
 
-// Update agent request status
-const updateAgentRequestStatus = async (
-  req: ProtectedRequest,
-  res: Response
-) => {
-  try {
-    const agentRequestId = req.params.id as string;
+const updateAgentRequestStatus: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
     const { status } = req.body;
 
-    // Validate required fields
-    if (!agentRequestId) {
-      return res.status(httpStatus.BAD_REQUEST).json(
-        response({
-          message: "Agent request ID is required in the URL parameter",
-          status: "ERROR",
-          statusCode: httpStatus.BAD_REQUEST,
-          data: {},
-        })
-      );
-    }
-
     if (!status) {
-      return res.status(httpStatus.BAD_REQUEST).json(
-        response({
-          message: "Status is required in the request body",
-          status: "ERROR",
-          statusCode: httpStatus.BAD_REQUEST,
-          data: {},
-        })
+      throw new AppError(httpStatus.BAD_REQUEST, "Status is required in the request body");
+    }
+
+    if (!VALID_STATUSES.includes(status)) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `Invalid status. Valid statuses are: ${VALID_STATUSES.join(", ")}`
       );
     }
 
-    // Validate status value
-    const validStatuses: Array<"pending" | "accept" | "decline" | "completed"> =
-      ["pending", "accept", "decline", "completed"];
-    if (!validStatuses.includes(status)) {
-      return res.status(httpStatus.BAD_REQUEST).json(
-        response({
-          message: `Invalid status. Valid statuses are: ${validStatuses.join(
-            ", "
-          )}`,
-          status: "ERROR",
-          statusCode: httpStatus.BAD_REQUEST,
-          data: {},
-        })
-      );
-    }
-
-    const updatedAgentRequest =
-      await agentRequestService.updateAgentRequestStatus(
-        agentRequestId,
-        status
-      );
+    const updatedAgentRequest = await agentRequestService.updateAgentRequestStatus(
+      req.params.id as string,
+      status
+    );
 
     if (!updatedAgentRequest) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Agent request not found",
-          status: "ERROR",
-          statusCode: httpStatus.NOT_FOUND,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.NOT_FOUND, "Agent request not found");
     }
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Agent request status updated successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: updatedAgentRequest,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json(
-      response({
-        message: handledError.message,
-        status: "ERROR",
-        statusCode: 500,
-        data: {},
-      })
-    );
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Agent request status updated successfully",
+      data: updatedAgentRequest,
+    });
   }
-};
+);
 
-// Get all agent requests with optional filters (for admin or authorized users)
-const getAllAgentRequests = async (req: ProtectedRequest, res: Response) => {
-  try {
+const getAllAgentRequests: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
     const { userId, agentId, status } = req.query;
 
     const agentRequests = await agentRequestService.getAllAgentRequests(
       typeof userId === "string" ? userId : undefined,
       typeof agentId === "string" ? agentId : undefined,
-      typeof status === "string"
-        ? (status as "pending" | "accept" | "decline" | "completed")
-        : undefined
+      typeof status === "string" ? (status as AgentRequestStatus) : undefined
     );
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "All agent requests retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: agentRequests,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json(
-      response({
-        message: handledError.message,
-        status: "ERROR",
-        statusCode: 500,
-        data: {},
-      })
-    );
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "All agent requests retrieved successfully",
+      data: agentRequests,
+    });
   }
-};
+);
 
-// Get single agent request by ID
-const getAgentRequestById = async (req: ProtectedRequest, res: Response) => {
-  try {
-    const agentRequestId = req.params.id as string;
-
-    if (!agentRequestId) {
-      return res.status(httpStatus.BAD_REQUEST).json(
-        response({
-          message: "Agent request ID is required",
-          status: "ERROR",
-          statusCode: httpStatus.BAD_REQUEST,
-          data: {},
-        })
-      );
-    }
-
+const getAgentRequestById: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
     const agentRequest = await agentRequestService.getAgentRequestById(
-      agentRequestId
+      req.params.id as string
     );
 
     if (!agentRequest) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Agent request not found",
-          status: "ERROR",
-          statusCode: httpStatus.NOT_FOUND,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.NOT_FOUND, "Agent request not found");
     }
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Agent request retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: agentRequest,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json(
-      response({
-        message: handledError.message,
-        status: "ERROR",
-        statusCode: 500,
-        data: {},
-      })
-    );
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Agent request retrieved successfully",
+      data: agentRequest,
+    });
   }
-};
+);
 
 const agentRequestController = {
   createAgentRequest,

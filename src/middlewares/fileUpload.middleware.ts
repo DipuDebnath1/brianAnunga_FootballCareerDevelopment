@@ -1,21 +1,22 @@
 import multer from "multer";
 import path from "path";
+
 const userFileUploadMiddleware = (uploadFolder: string) => {
   const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, uploadFolder); // Set the destination folder
+    destination: (_req, _file, cb) => {
+      cb(null, uploadFolder);
     },
-    filename: (req, file, cb) => {
+    filename: (_req, file, cb) => {
       const extname = path.extname(file.originalname);
-      const filename = Date.now() + "-" + file.fieldname + extname; // Unique file name
-      cb(null, filename); // Set the file name
+      const filename = `${Date.now()}-${file.fieldname}${extname}`;
+      cb(null, filename);
     },
   });
 
   return multer({
     storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // Max file size: 10MB
-    fileFilter: (req, file, cb) => {
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
       const fileTypes = /jpeg|jpg|png/;
       const extname = fileTypes.test(
         path.extname(file.originalname).toLowerCase()
@@ -23,11 +24,9 @@ const userFileUploadMiddleware = (uploadFolder: string) => {
       const mimetype = fileTypes.test(file.mimetype);
 
       if (extname && mimetype) {
-        return cb(null, true); // If file is valid, allow it
+        cb(null, true);
       } else {
-        const error: any = new Error("Only image or heic files are allowed!");
-        error.code = "INVALID_FILE_TYPE";
-        return cb(error, false);
+        cb(new Error("Only image or heic files are allowed!"));
       }
     },
   });

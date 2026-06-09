@@ -1,195 +1,139 @@
-import { Request, Response } from "express";
-import generalsService from "./generals.services";
-import { handleError } from "../../lib/errorsHandle";
+import { Request, RequestHandler, Response } from "express";
 import httpStatus from "http-status";
-import { response } from "../../lib/response";
-import { Types } from "mongoose";
+import AppError from "../../ErrorHandler/AppError";
+import catchAsync from "../../utills/catchAsync";
+import sendResponse from "../../utills/sendResponse";
+import generalsService from "./generals.services";
 
-// Subscription Controllers
-const createSubscription = async (req: Request, res: Response) => {
-  try {
+const createSubscription: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
     const subscription = await generalsService.createSubscription(req.body);
-    res.status(httpStatus.CREATED).json(
-      response({
-        message: "Subscription package created successfully",
-        status: "OK",
-        statusCode: httpStatus.CREATED,
-        data: subscription,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
-  }
-};
 
-const getAllSubscriptions = async (req: Request, res: Response) => {
-  try {
+    sendResponse(res, {
+      statusCode: httpStatus.CREATED,
+      success: true,
+      message: "Subscription package created successfully",
+      data: subscription,
+    });
+  }
+);
+
+const getAllSubscriptions: RequestHandler = catchAsync(
+  async (_req: Request, res: Response) => {
     const subscriptions = await generalsService.getAllSubscriptions();
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Subscriptions retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: subscriptions,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
-  }
-};
 
-const updateSubscription = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const subscription = await generalsService.updateSubscription(id as string, req.body);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Subscriptions retrieved successfully",
+      data: subscriptions,
+    });
+  }
+);
+
+const updateSubscription: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const subscription = await generalsService.updateSubscription(
+      req.params.id as string,
+      req.body
+    );
 
     if (!subscription) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Subscription not found",
-          status: "NOT_FOUND",
-          statusCode: httpStatus.NOT_FOUND,
-        })
-      );
+      throw new AppError(httpStatus.NOT_FOUND, "Subscription not found");
     }
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Subscription updated successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: subscription,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Subscription updated successfully",
+      data: subscription,
+    });
   }
-};
+);
 
-const deleteSubscription = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const subscription = await generalsService.deleteSubscription(id as string);
+const deleteSubscription: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const subscription = await generalsService.deleteSubscription(
+      req.params.id as string
+    );
 
     if (!subscription) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Subscription not found",
-          status: "NOT_FOUND",
-          statusCode: httpStatus.NOT_FOUND,
-        })
-      );
+      throw new AppError(httpStatus.NOT_FOUND, "Subscription not found");
     }
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Subscription deleted successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: subscription,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Subscription deleted successfully",
+      data: subscription,
+    });
   }
-};
+);
 
-// Testimonial Controllers
-const createTestimonial = async (req: Request, res: Response) => {
-  try {
+const createTestimonial: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
     const testimonial = await generalsService.createTestimonial(req.body);
-    res.status(httpStatus.CREATED).json(
-      response({
-        message: "Testimonial created successfully",
-        status: "OK",
-        statusCode: httpStatus.CREATED,
-        data: testimonial,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
-  }
-};
 
-const getAllTestimonials = async (req: Request, res: Response) => {
-  try {
+    sendResponse(res, {
+      statusCode: httpStatus.CREATED,
+      success: true,
+      message: "Testimonial created successfully",
+      data: testimonial,
+    });
+  }
+);
+
+const getAllTestimonials: RequestHandler = catchAsync(
+  async (_req: Request, res: Response) => {
     const testimonials = await generalsService.getAllTestimonials();
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Testimonials retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: testimonials,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
-  }
-};
 
-const updateTestimonial = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const testimonial = await generalsService.updateTestimonial(id as string, req.body);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Testimonials retrieved successfully",
+      data: testimonials,
+    });
+  }
+);
+
+const updateTestimonial: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const testimonial = await generalsService.updateTestimonial(
+      req.params.id as string,
+      req.body
+    );
 
     if (!testimonial) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Testimonial not found",
-          status: "NOT_FOUND",
-          statusCode: httpStatus.NOT_FOUND,
-        })
-      );
+      throw new AppError(httpStatus.NOT_FOUND, "Testimonial not found");
     }
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Testimonial updated successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: testimonial,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Testimonial updated successfully",
+      data: testimonial,
+    });
   }
-};
+);
 
-const deleteTestimonial = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const testimonial = await generalsService.deleteTestimonial(id as string);
+const deleteTestimonial: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const testimonial = await generalsService.deleteTestimonial(
+      req.params.id as string
+    );
 
     if (!testimonial) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Testimonial not found",
-          status: "NOT_FOUND",
-          statusCode: httpStatus.NOT_FOUND,
-        })
-      );
+      throw new AppError(httpStatus.NOT_FOUND, "Testimonial not found");
     }
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Testimonial deleted successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: testimonial,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Testimonial deleted successfully",
+      data: testimonial,
+    });
   }
-};
+);
 
 export default {
   createSubscription,

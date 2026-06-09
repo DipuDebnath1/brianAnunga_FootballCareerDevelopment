@@ -8,7 +8,7 @@ const logRequestResponse = (
 ) => {
   const start = Date.now();
   const originalSend = res.send;
-  res.send = function (body: any) {
+  res.send = function (body: unknown) {
     const duration = Date.now() - start;
     logger.info(`${req.method} ${req.originalUrl} - ${duration}ms`);
     res.send = originalSend;

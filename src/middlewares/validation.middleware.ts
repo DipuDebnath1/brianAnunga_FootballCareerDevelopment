@@ -1,14 +1,19 @@
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 import Joi from "joi";
 
 const validate = (schema: Joi.ObjectSchema) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const { error } = schema.validate(req.body);
+  return (req: Request, _res: Response, next: NextFunction) => {
+    const { error, value } = schema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
+
     if (error) {
-      // If validation fails, return a 400 status with the validation error message
-      return res.status(400).json({ error: error.details[0].message });
+      return next(error);
     }
-    next(); // Proceed to the next middleware (controller)
+
+    req.body = value;
+    next();
   };
 };
 

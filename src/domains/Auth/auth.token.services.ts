@@ -1,5 +1,6 @@
 import jwt, { SignOptions } from "jsonwebtoken";
 import ms from "ms";
+import config from "../../config/index";
 
 export interface UserTokenPayload {
   userId: string;
@@ -19,9 +20,13 @@ export const createToken = (
 };
 
 export const createRefreshToken = (userDetails: UserTokenPayload): string => {
-  return createToken(userDetails, process.env.JWT_REFRESH_SECRET!, "30d");
+  return createToken(
+    userDetails,
+    config.jwt.refreshSecret,
+    config.jwt.refreshExpiresIn
+  );
 };
 
 export const verifyRefreshToken = (token: string): UserTokenPayload => {
-  return jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as UserTokenPayload;
+  return jwt.verify(token, config.jwt.refreshSecret) as UserTokenPayload;
 };

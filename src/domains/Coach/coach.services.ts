@@ -26,8 +26,7 @@ const getCoachByUserId = async (userId: string) => {
 // Get all coaches with optional filters for area of expertise
 const getAllCoaches = async (
   areaOfExpertise?: string,
-  experienceYears?: number,
-  location?: string
+  experienceYears?: number
 ) => {
   let query = {};
 
@@ -39,9 +38,6 @@ const getAllCoaches = async (
   if (experienceYears) {
     query = { ...query, experienceYears: { $gte: experienceYears } }; // Coaches with at least this many years of experience
   }
-
-  // Note: The coach model doesn't have a location field, so this filter is not applicable
-  // I'm keeping the parameter for potential future use or extension
 
   return await Coach.find(query);
 };

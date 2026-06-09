@@ -3,33 +3,33 @@ interface ResponseData {
   status: string;
   message: string;
   data?: object;
-  type?: any;
+  type?: string;
   token?: string;
 }
 
-export const response = (response: ResponseData = {} as ResponseData) => {
+export const response = (responseData: ResponseData = {} as ResponseData) => {
   const responseObject: {
     code: number;
     status: string;
     message: string;
-    data?: any;
+    data?: Record<string, unknown>;
   } = {
-    code: response.statusCode,
-    message: response.message,
-    status: response.status,
+    code: responseData.statusCode,
+    message: responseData.message,
+    status: responseData.status,
     data: {},
   };
 
-  if (response.type) {
-    responseObject.data.type = response.type;
+  if (responseData.type) {
+    responseObject.data = { ...responseObject.data, type: responseData.type };
   }
 
-  if (response.data) {
-    responseObject.data = response.data;
+  if (responseData.data) {
+    responseObject.data = responseData.data as Record<string, unknown>;
   }
 
-  if (response.token) {
-    responseObject.data.token = response.token; // Fixed typo: changed `response.tokens` to `response.token`
+  if (responseData.token) {
+    responseObject.data = { ...responseObject.data, token: responseData.token };
   }
 
   return responseObject;

@@ -16,7 +16,7 @@ export interface IAMUser extends Document {
   isResetPassword: boolean;
   fcmToken: string;
   isDeleted: boolean;
-  isPasswordMatch(password: string): Promise<boolean>; // Add this method to IAMUser interface
+  isPasswordMatch(_password: string): Promise<boolean>;
 }
 
 const userSchema = new Schema<IAMUser>(

@@ -1,25 +1,15 @@
-import connectionToDb from "./config/db";
-import setUpSocketIO from "./config/socketio";
-import app from "./server";
-import dotenv from "dotenv";
 import http from "http";
+import connectionToDb from "./config/db";
+import config from "./config/index";
+import setUpSocketIO from "./config/socketio";
+import logger from "./lib/logger";
+import app from "./server";
 
-// Loading the local Environment Variables from .env file
-dotenv.config();
-
-// connection to the database
 connectionToDb();
 
-// creating server
 const server = http.createServer(app);
+setUpSocketIO(server);
 
-// initialize the socket io
-const io = setUpSocketIO(server);
-
-//using the post and ip over here
-const backendIp = process.env.BACKEND_IP || "localhost";
-const port = process.env.PORT || 3000;
-
-server.listen(Number(port), backendIp, () => {
-  console.log(`Server is running at http://${backendIp}:${port}`);
+server.listen(config.port, config.ip, () => {
+  logger.info(`Server is running at http://${config.ip}:${config.port}`);
 });

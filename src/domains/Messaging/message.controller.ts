@@ -1,143 +1,101 @@
-import { Request, Response } from "express";
-import messageService from "./message.service";
-import { handleError } from "../../lib/errorsHandle";
+import { Request, RequestHandler, Response } from "express";
 import httpStatus from "http-status";
-import { response } from "../../lib/response";
+import AppError from "../../ErrorHandler/AppError";
+import catchAsync from "../../utills/catchAsync";
+import sendResponse from "../../utills/sendResponse";
 import { ProtectedRequest } from "../../types/protected-request";
+import conversationService from "../Conversations/conversation.service";
+import messageService from "./message.service";
 
-// Create a new message
-const createMessage = async (req: ProtectedRequest, res: Response) => {
-  try {
-    const userId = req.user?._id as string;
+const isConversationParticipant = (
+  participants: Array<{ _id: { toString(): string } }>,
+  userId: string
+) => participants.some((p) => p._id.toString() === userId);
+
+const createMessage: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
+    const userId = user!._id;
     const { conversationId, content } = req.body;
 
-    // Verify that the user is part of this conversation
-    const conversation = await import(
-      "../Conversations/conversation.service"
-    ).then((service) => service.default.getConversationById(conversationId));
+    const conversation = await conversationService.getConversationById(conversationId);
 
-    if (
-      !conversation ||
-      !conversation.participants.some((p: any) => p._id.toString() === userId)
-    ) {
-      return res.status(httpStatus.FORBIDDEN).json(
-        response({
-          message:
-            "You are not authorized to send messages in this conversation",
-          status: "ERROR",
-          statusCode: httpStatus.FORBIDDEN,
-          data: {},
-        })
+    if (!conversation || !isConversationParticipant(conversation.participants as Array<{ _id: { toString(): string } }>, userId)) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "You are not authorized to send messages in this conversation"
       );
     }
 
-    const newMessage = await messageService.createMessage(
-      conversationId,
-      userId,
-      content
-    );
+    const newMessage = await messageService.createMessage(conversationId, userId, content);
 
-    res.status(httpStatus.CREATED).json(
-      response({
-        message: "Message sent successfully",
-        status: "OK",
-        statusCode: httpStatus.CREATED,
-        data: newMessage,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.CREATED,
+      success: true,
+      message: "Message sent successfully",
+      data: newMessage,
+    });
   }
-};
+);
 
-// Get messages for a conversation
-const getMessagesByConversation = async (
-  req: ProtectedRequest,
-  res: Response
-) => {
-  try {
+const getMessagesByConversation: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
+    const userId = user!._id;
     const { conversationId } = req.params;
-    const { skip = 0, limit = 50 } = req.query;
+    const { skip = "0", limit = "50" } = req.query;
 
-    // Verify that the user is part of this conversation
-    const conversation = await import(
-      "../Conversations/conversation.service"
-    ).then((service) => service.default.getConversationById(conversationId as string));
+    const conversation = await conversationService.getConversationById(conversationId as string);
 
-    const userId = req.user?._id as string;
-    if (
-      !conversation ||
-      !conversation.participants.some((p: any) => p._id.toString() === userId)
-    ) {
-      return res.status(httpStatus.FORBIDDEN).json(
-        response({
-          message:
-            "You are not authorized to access messages in this conversation",
-          status: "ERROR",
-          statusCode: httpStatus.FORBIDDEN,
-          data: {},
-        })
+    if (!conversation || !isConversationParticipant(conversation.participants as Array<{ _id: { toString(): string } }>, userId)) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "You are not authorized to access messages in this conversation"
       );
     }
 
     const messages = await messageService.getMessagesByConversation(
       conversationId as string,
-      parseInt(skip as string),
-      parseInt(limit as string)
+      parseInt(skip as string, 10),
+      parseInt(limit as string, 10)
     );
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Messages retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: messages,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Messages retrieved successfully",
+      data: messages,
+    });
   }
-};
+);
 
-// Update a message (edit)
-const updateMessage = async (req: ProtectedRequest, res: Response) => {
-  try {
-    const userId = req.user?._id as string;
+const updateMessage: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
     const { messageId } = req.params;
     const { content } = req.body;
 
     const updatedMessage = await messageService.updateMessage(
       messageId as string,
       content,
-      userId
+      user!._id
     );
 
     if (!updatedMessage) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Message not found or you don't have permission to edit it",
-          status: "ERROR",
-          statusCode: httpStatus.NOT_FOUND,
-          data: {},
-        })
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        "Message not found or you don't have permission to edit it"
       );
     }
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Message updated successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: updatedMessage,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Message updated successfully",
+      data: updatedMessage,
+    });
   }
-};
+);
 
 const messageController = {
   createMessage,

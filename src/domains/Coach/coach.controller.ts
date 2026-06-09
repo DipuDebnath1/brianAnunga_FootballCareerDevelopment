@@ -1,143 +1,89 @@
-import { Request, Response } from "express";
-import coachService from "./coach.services";
-import { handleError } from "../../lib/errorsHandle";
+import { Request, RequestHandler, Response } from "express";
 import httpStatus from "http-status";
-import { response } from "../../lib/response";
+import AppError from "../../ErrorHandler/AppError";
+import catchAsync from "../../utills/catchAsync";
+import sendResponse from "../../utills/sendResponse";
 import { ProtectedRequest } from "../../types/protected-request";
+import coachService from "./coach.services";
 
-const createCoachProfile = async (req: ProtectedRequest, res: Response) => {
-  try {
-    // Extract user ID from the authenticated request
-    const userId = req.user?._id as string;
+const createCoachProfile: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
+    const existingCoach = await coachService.getCoachByUserId(user!._id);
 
-    // Check if coach profile already exists for this user
-    const existingCoach = await coachService.getCoachByUserId(userId);
     if (existingCoach) {
-      return res.status(httpStatus.CONFLICT).json(
-        response({
-          message: "Coach profile already exists for this user",
-          status: "ERROR",
-          statusCode: httpStatus.CONFLICT,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.CONFLICT, "Coach profile already exists for this user");
     }
 
-    // Create the coach profile with the user ID
-    const coachData = {
+    const newCoachProfile = await coachService.createCoachProfile({
       ...req.body,
-      user_id: userId,
-    };
+      user_id: user!._id,
+    });
 
-    const newCoachProfile = await coachService.createCoachProfile(
-      coachData
-    );
-
-    res.status(httpStatus.CREATED).json(
-      response({
-        message: "Coach profile created successfully",
-        status: "OK",
-        statusCode: httpStatus.CREATED,
-        data: newCoachProfile,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.CREATED,
+      success: true,
+      message: "Coach profile created successfully",
+      data: newCoachProfile,
+    });
   }
-};
+);
 
-const updateCoachProfile = async (req: ProtectedRequest, res: Response) => {
-  try {
-    const userId = req.user?._id as string;
-
-    console.log(userId);
-
-    // Update the coach profile
+const updateCoachProfile: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
     const updatedCoachProfile = await coachService.updateCoachProfile(
-      userId,
+      user!._id,
       req.body
     );
 
     if (!updatedCoachProfile) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Coach profile not found",
-          status: "ERROR",
-          statusCode: httpStatus.NOT_FOUND,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.NOT_FOUND, "Coach profile not found");
     }
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Coach profile updated successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: updatedCoachProfile,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Coach profile updated successfully",
+      data: updatedCoachProfile,
+    });
   }
-};
+);
 
-const getCoachProfile = async (req: ProtectedRequest, res: Response) => {
-  try {
-    const userId = req.user?._id as string;
-
-    const coach = await coachService.getCoachByUserId(userId);
+const getCoachProfile: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
+    const coach = await coachService.getCoachByUserId(user!._id);
 
     if (!coach) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Coach profile not found",
-          status: "ERROR",
-          statusCode: httpStatus.NOT_FOUND,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.NOT_FOUND, "Coach profile not found");
     }
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Coach profile retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: coach,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Coach profile retrieved successfully",
+      data: coach,
+    });
   }
-};
+);
 
-const getAllCoaches = async (req: Request, res: Response) => {
-  try {
-    // Extract query parameters for filtering
+const getAllCoaches: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
     const { areaOfExpertise, experienceYears } = req.query;
-
     const coaches = await coachService.getAllCoaches(
       typeof areaOfExpertise === "string" ? areaOfExpertise : undefined,
-      typeof experienceYears === "string" ? parseInt(experienceYears) : undefined
+      typeof experienceYears === "string" ? parseInt(experienceYears, 10) : undefined
     );
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "All coaches retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: coaches,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "All coaches retrieved successfully",
+      data: coaches,
+    });
   }
-};
+);
 
 const coachController = {
   createCoachProfile,

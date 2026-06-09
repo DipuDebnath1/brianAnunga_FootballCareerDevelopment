@@ -1,4 +1,4 @@
-import winston, { Logform } from "winston";
+import winston from "winston";
 import "winston-daily-rotate-file";
 
 const logFormat = winston.format.printf(({ level, message }) => {

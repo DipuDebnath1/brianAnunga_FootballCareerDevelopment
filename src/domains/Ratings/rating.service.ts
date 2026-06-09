@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { FilterQuery } from "mongoose";
 import Rating, { IRating, RatingType } from "./rating.model";
 
 // Create a new rating
@@ -199,7 +199,7 @@ const getAllRatings = async (
   page: number = 1,
   limit: number = 10
 ) => {
-  let query: any = {};
+  const query: FilterQuery<IRating> = {};
 
   if (ratingType) {
     query.ratingType = ratingType;

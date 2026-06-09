@@ -1,6 +1,4 @@
 import Conversation from "./conversation.model";
-import { IConversation } from "./conversation.model";
-import Message from "../Messaging/message.model";
 
 // Create a new private conversation between two users
 const createConversation = async (

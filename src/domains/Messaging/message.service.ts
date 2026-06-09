@@ -1,5 +1,4 @@
 import Message from "./message.model";
-import { IMessage } from "./message.model";
 import conversationService from "../Conversations/conversation.service";
 
 // Create a new message

@@ -1,90 +1,56 @@
-import { Request, Response } from "express";
-import playerService from "./players.services";
-import { handleError } from "../../lib/errorsHandle";
+import { Request, RequestHandler, Response } from "express";
 import httpStatus from "http-status";
-import { response } from "../../lib/response";
+import AppError from "../../ErrorHandler/AppError";
+import catchAsync from "../../utills/catchAsync";
+import sendResponse from "../../utills/sendResponse";
 import { ProtectedRequest } from "../../types/protected-request";
+import playerService from "./players.services";
 
-const createPlayerProfile = async (req: ProtectedRequest, res: Response) => {
-  try {
-    // Extract user ID from the authenticated request
-    const userId = req.user?._id as string;
+const createPlayerProfile: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
+    const playerData = { ...req.body, user_id: user!._id };
+    const newPlayerProfile = await playerService.createPlayerProfile(playerData);
 
-    // Create the player profile with the user ID
-    const playerData = {
-      ...req.body,
-      user_id: userId,
-    };
-
-    const newPlayerProfile = await playerService.createPlayerProfile(
-      playerData
-    );
-
-    res.status(httpStatus.CREATED).json(
-      response({
-        message: "Player profile created successfully",
-        status: "OK",
-        statusCode: httpStatus.CREATED,
-        data: newPlayerProfile,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.CREATED,
+      success: true,
+      message: "Player profile created successfully",
+      data: newPlayerProfile,
+    });
   }
-};
+);
 
-const updatePlayerProfile = async (req: ProtectedRequest, res: Response) => {
-  try {
-    const userId = req.user?._id as string;
-
-    console.log(userId);
-
-    // Update the player profile
+const updatePlayerProfile: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
     const updatedPlayerProfile = await playerService.updatePlayerProfile(
-      userId,
+      user!._id,
       req.body
     );
 
     if (!updatedPlayerProfile) {
-      return res.status(httpStatus.NOT_FOUND).json(
-        response({
-          message: "Player profile not found",
-          status: "ERROR",
-          statusCode: httpStatus.NOT_FOUND,
-          data: {},
-        })
-      );
+      throw new AppError(httpStatus.NOT_FOUND, "Player profile not found");
     }
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "Player profile updated successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: updatedPlayerProfile,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Player profile updated successfully",
+      data: updatedPlayerProfile,
+    });
   }
-};
+);
 
-const getAllPlayers = async (req: Request, res: Response) => {
-  try {
-    // Extract query parameters for filtering
+const getAllPlayers: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
     const { position, location, keySkills } = req.query;
 
-    // Convert keySkills from string to array if it exists
     let skillsArray: string[] | undefined;
     if (typeof keySkills === "string") {
       skillsArray = keySkills.split(",");
     } else if (Array.isArray(keySkills)) {
-      // Filter out any non-string values to ensure we only have string[]
-      skillsArray = keySkills.filter(
-        (skill) => typeof skill === "string"
-      ) as string[];
+      skillsArray = keySkills.filter((skill) => typeof skill === "string") as string[];
     }
 
     const players = await playerService.getAllPlayers(
@@ -93,19 +59,14 @@ const getAllPlayers = async (req: Request, res: Response) => {
       skillsArray
     );
 
-    res.status(httpStatus.OK).json(
-      response({
-        message: "All players retrieved successfully",
-        status: "OK",
-        statusCode: httpStatus.OK,
-        data: players,
-      })
-    );
-  } catch (error) {
-    const handledError = handleError(error);
-    res.status(500).json({ error: handledError.message });
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "All players retrieved successfully",
+      data: players,
+    });
   }
-};
+);
 
 const playerController = {
   createPlayerProfile,

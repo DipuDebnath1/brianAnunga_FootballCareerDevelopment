@@ -1,5 +1,7 @@
+import { FilterQuery } from "mongoose";
 import AgentRequest, { IAMAgentRequest } from "./agentRequest.model";
 import Agent from "../Agent/agent.model";
+
 
 // Create a new agent request
 const createAgentRequest = async (agentRequestData: Partial<IAMAgentRequest>) => {
@@ -41,7 +43,7 @@ const getAllAgentRequests = async (
   agentId?: string,
   status?: "pending" | "accept" | "decline" | "completed"
 ) => {
-  let query: any = {};
+  const query: FilterQuery<IAMAgentRequest> = {};
 
   // Add filters if provided
   if (userId) {
