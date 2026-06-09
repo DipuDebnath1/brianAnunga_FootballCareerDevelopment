@@ -1,25 +1,35 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
-import { roles } from "../../config/roles";
-import validator from "validator";
 import bcrypt from "bcryptjs";
+import mongoose, {
+  HydratedDocument,
+  Model,
+  Schema,
+} from "mongoose";
+import validator from "validator";
+import { AllRoles, ROLE, TRoles } from "../../utills/roles";
 
-export interface IAMUser extends Document {
-  _id: Types.ObjectId; // Explicitly typing _id
+export interface IUser {
   name: string;
   email: string;
   password: string;
   image: string;
-  role: string;
+  role: TRoles;
   oneTimeCode: number | null;
-  otpPurpose: "verify" | "reset" | null;  // type of otp purpose
+  otpPurpose: "verify" | "reset" | null;
   isEmailVerified: boolean;
   isResetPassword: boolean;
-  fcmToken: string;
+  fcmToken: string | null;
   isDeleted: boolean;
+}
+
+export interface IUserMethods {
   isPasswordMatch(_password: string): Promise<boolean>;
 }
 
-const userSchema = new Schema<IAMUser>(
+export type IAMUser = HydratedDocument<IUser, IUserMethods>;
+
+type UserModel = Model<IUser, Record<string, never>, IUserMethods>;
+
+const userSchema = new Schema<IUser, UserModel, IUserMethods>(
   {
     name: {
       type: String,
@@ -57,8 +67,8 @@ const userSchema = new Schema<IAMUser>(
     },
     role: {
       type: String,
-      enum: roles,
-      default: "user",
+      enum: Object.keys(AllRoles),
+      default: ROLE.user,
     },
     oneTimeCode: { type: Number, default: null },
     otpPurpose: {
@@ -74,17 +84,17 @@ const userSchema = new Schema<IAMUser>(
   { timestamps: true }
 );
 
-userSchema.methods.isPasswordMatch = async function (password: string) {
-  return bcrypt.compare(password, this.password);
+userSchema.methods.isPasswordMatch = async function (_password: string) {
+  return bcrypt.compare(_password, this.password);
 };
 
 userSchema.pre("save", async function (next) {
   if (this.isModified("password")) {
-    this.password = await bcrypt.hash(this.password, 8); // Hash password with a salt of 8 rounds
+    this.password = await bcrypt.hash(this.password, 8);
   }
   next();
 });
 
-const User = mongoose.model<IAMUser>("User", userSchema);
+const User = mongoose.model<IUser, UserModel>("User", userSchema);
 
 export default User;

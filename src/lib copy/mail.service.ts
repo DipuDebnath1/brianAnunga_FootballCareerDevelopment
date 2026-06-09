@@ -20,26 +20,12 @@ const verifyEmailTransport = async () => {
 };
 verifyEmailTransport();
 
-type SendEmailOptions = {
-  text?: string;
-  html?: string;
-};
-
-export const sendEmail = async (
-  to: string,
-  subject: string,
-  content: string | SendEmailOptions
-) => {
-  const body =
-    typeof content === "string"
-      ? { text: content }
-      : { text: content.text, html: content.html };
-
+export const sendEmail = async (to: string, subject: string, text: string) => {
   const mailOptions = {
-    from: config.email.smtp.from || config.email.smtp.auth.user,
+    from: config.email.smtp.auth.user,
     to,
     subject,
-    ...body,
+    text,
   };
 
   try {

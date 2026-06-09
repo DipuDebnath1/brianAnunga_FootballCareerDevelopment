@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { roles } from "../../config/roles";
+import { AllowSignupRoles } from "../../utills/roles";
 
 const registerValidation = Joi.object({
   name: Joi.string().min(3).required(),
@@ -11,7 +11,7 @@ const registerValidation = Joi.object({
     .required(),
   role: Joi.string()
     .required()
-    .valid(...roles),
+    .valid(...AllowSignupRoles),
 });
 
 const verificationValidation = Joi.object({

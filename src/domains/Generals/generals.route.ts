@@ -1,24 +1,24 @@
 import { Router } from "express";
 import generalsController from "./generals.controller";
-import { authMiddleware } from "../../middlewares/auth.middleware";
+import auth from "../../middlewares/auth";
 
 const router = Router();
 
 // Subscription Routes
 router.post(
   "/subscriptions",
-  authMiddleware,
+  auth(),
   generalsController.createSubscription
 );
 router.get("/subscriptions", generalsController.getAllSubscriptions);
 router.patch(
   "/subscriptions/:id",
-  authMiddleware,
+  auth(),
   generalsController.updateSubscription
 );
 router.delete(
   "/subscriptions/:id",
-  authMiddleware,
+  auth(),
   generalsController.deleteSubscription
 );
 
@@ -27,12 +27,12 @@ router.post("/testimonials", generalsController.createTestimonial);
 router.get("/testimonials", generalsController.getAllTestimonials);
 router.patch(
   "/testimonials/:id",
-  authMiddleware,
+  auth(),
   generalsController.updateTestimonial
 );
 router.delete(
   "/testimonials/:id",
-  authMiddleware,
+  auth(),
   generalsController.deleteTestimonial
 );
 

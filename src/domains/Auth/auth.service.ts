@@ -1,7 +1,10 @@
 import httpStatus from "http-status";
 import AppError from "../../ErrorHandler/AppError";
 import config from "../../config/index";
-import { sendEmail } from "../../lib/mail.service";
+import {
+  sendPasswordResetOtpMail,
+  sendVerificationOtpMail,
+} from "../../lib/sendOtp";
 import User, { IAMUser } from "../User/user.model";
 import {
   createRefreshToken,
@@ -60,6 +63,7 @@ const register = async (userData: {
       existingUser.oneTimeCode = generateOtp();
       existingUser.otpPurpose = "verify" as OtpPurpose;
       await existingUser.save();
+      await sendVerificationOtpMail(existingUser.email, existingUser.oneTimeCode);
       data = existingUser;
     }
   }
@@ -75,6 +79,7 @@ const register = async (userData: {
     });
   
     await newUser.save();
+    await sendVerificationOtpMail(newUser.email, oneTimeCode);
     data = newUser;
   }
 
@@ -149,9 +154,7 @@ const forgotPassword = async (email: string) => {
   user.otpPurpose = "reset";
   await user.save();
 
-  const resetLink = `${config.frontendUrl}/reset-password?code=${resetCode}&email=${encodeURIComponent(email)}`;
-  const emailText = `Please click the following link to reset your password: ${resetLink}`;
-  await sendEmail(user.email, "Reset Your Password", emailText);
+  await sendPasswordResetOtpMail(user.email, resetCode);
 
   return { message: "Password reset email sent" };
 };
@@ -216,9 +219,7 @@ const resendVerificationEmail = async (email: string) => {
   user.otpPurpose = "verify";
   await user.save();
 
-  const verificationLink = `${config.frontendUrl}/verify-email?code=${oneTimeCode}&email=${encodeURIComponent(email)}`;
-  const emailText = `Please click the following link to verify your email address: ${verificationLink}`;
-  await sendEmail(user.email, "Verify Your Email Address", emailText);
+  await sendVerificationOtpMail(user.email, oneTimeCode);
 
   return { message: "Verification email resent" };
 };

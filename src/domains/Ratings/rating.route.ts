@@ -1,14 +1,14 @@
 import { Router } from "express";
 import ratingController from "./rating.controller";
-import { authMiddleware } from "../../middlewares/auth.middleware";
+import auth from "../../middlewares/auth";
 
 const router = Router();
 
 // Create a new rating (protected route)
-router.post("/", authMiddleware, ratingController.createRating);
+router.post("/", auth(), ratingController.createRating);
 
 // Update a rating by ID (protected route)
-router.put("/:ratingId", authMiddleware, ratingController.updateRating);
+router.put("/:ratingId", auth(), ratingController.updateRating);
 
 // Get rating by ID (public route)
 router.get("/:ratingId", ratingController.getRatingById);
@@ -29,7 +29,7 @@ router.get(
 router.get("/user/:userId", ratingController.getRatingsByUser);
 
 // Delete a rating by ID (protected route)
-router.delete("/:ratingId", authMiddleware, ratingController.deleteRating);
+router.delete("/:ratingId", auth(), ratingController.deleteRating);
 
 // Get all ratings with optional filters (public route)
 router.get("/", ratingController.getAllRatings);

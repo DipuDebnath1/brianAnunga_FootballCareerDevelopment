@@ -2,7 +2,8 @@ import { Router } from "express";
 import authController from "./auth.controller";
 import validate from "../../middlewares/validation.middleware";
 import authValidator from "./auth.validation";
-import { authMiddleware } from "../../middlewares/auth.middleware";
+import auth from "../../middlewares/auth";
+import { ROLE } from "../../utills/roles";
 
 const router = Router();
 
@@ -38,7 +39,7 @@ router.post(
 
 router.post(
   "/change-password",
-  authMiddleware,
+  auth(ROLE.common),
   validate(authValidator.changePasswordValidation),
   authController.changePassword
 );
@@ -57,7 +58,7 @@ router.post(
 
 router.delete(
   "/delete/:userId",
-  authMiddleware,
+  auth(ROLE.commonAdmin),
   authController.deleteUser
 );
 

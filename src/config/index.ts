@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 dotenv.config({ quiet: true });
 
 const config = {
+  appName: process.env.APP_NAME ?? "Server Side",
   nodeEnv: process.env.NODE_ENV ?? "development",
   isProduction: process.env.NODE_ENV === "production",
   ip: process.env.BACKEND_IP ?? "localhost",

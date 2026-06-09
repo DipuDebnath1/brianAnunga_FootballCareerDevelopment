@@ -1,23 +1,23 @@
 import { Router } from "express";
 import messageController from "./message.controller";
-import { authMiddleware } from "../../middlewares/auth.middleware";
+import auth from "../../middlewares/auth";
 
 const router = Router();
 
 // Create a new message
-router.post("/", authMiddleware, messageController.createMessage);
+router.post("/", auth(), messageController.createMessage);
 
 // Get messages for a conversation
 router.get(
   "/conversation/:conversationId",
-  authMiddleware,
+  auth(),
   messageController.getMessagesByConversation
 );
 
 // Update a message (edit)
-router.put("/:messageId", authMiddleware, messageController.updateMessage);
+router.put("/:messageId", auth(), messageController.updateMessage);
 
 // Delete a message
-// router.delete("/:messageId", authMiddleware, messageController.deleteMessage);
+// router.delete("/:messageId", auth(), messageController.deleteMessage);
 
 export default router;

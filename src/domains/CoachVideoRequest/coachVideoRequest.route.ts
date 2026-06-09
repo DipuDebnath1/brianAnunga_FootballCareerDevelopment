@@ -1,55 +1,55 @@
 import { Router } from "express";
 import coachVideoRequestController from "./coachVideoRequest.controller";
-import { authMiddleware } from "../../middlewares/auth.middleware";
+import auth from "../../middlewares/auth";
 
 const router = Router();
 
 // Create coach video request (protected route)
 router.post(
   "/",
-  authMiddleware,
+  auth(),
   coachVideoRequestController.createCoachVideoRequest
 );
 
 // Get coach video requests by coach_id (protected route)
 router.get(
   "/coach/:coachId",
-  authMiddleware,
+  auth(),
   coachVideoRequestController.getCoachVideoRequestsByCoachId
 );
 
 // Get coach video requests by user_id (protected route)
 router.get(
   "/user",
-  authMiddleware,
+  auth(),
   coachVideoRequestController.getCoachVideoRequestsByUserId
 );
 
 // Update coach video request status (protected route)
 router.put(
   "/:id/status",
-  authMiddleware,
+  auth(),
   coachVideoRequestController.updateCoachVideoRequestStatus
 );
 
 // Update coach video request with feedback (protected route)
 router.put(
   "/:id/feedback",
-  authMiddleware,
+  auth(),
   coachVideoRequestController.updateCoachVideoRequestFeedback
 );
 
 // Get all coach video requests with optional filters (protected route, likely for admin)
 router.get(
   "/",
-  authMiddleware,
+  auth(),
   coachVideoRequestController.getAllCoachVideoRequests
 );
 
 // Get single coach video request by ID (protected route)
 router.get(
   "/:id",
-  authMiddleware,
+  auth(),
   coachVideoRequestController.getCoachVideoRequestById
 );
 
