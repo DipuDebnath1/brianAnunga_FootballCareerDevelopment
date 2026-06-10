@@ -1,5 +1,6 @@
 import mongoose, { FilterQuery } from "mongoose";
-import Rating, { IRating, RatingType } from "./rating.model";
+import Rating from "./rating.model";
+import { IRating, RatingType } from "./rating.interface";
 
 // Create a new rating
 const createRating = async (ratingData: Partial<IRating>) => {

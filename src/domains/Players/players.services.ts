@@ -1,7 +1,8 @@
-import Player, { IAMPlayer } from "./players.model";
+import Player from "./players.model";
+import { IPlayer } from "./players.interface";
 
 // Create a new player profile
-const createPlayerProfile = async (playerData: Partial<IAMPlayer>) => {
+const createPlayerProfile = async (playerData: Partial<IPlayer>) => {
   const player = new Player(playerData);
   return await player.save();
 };
@@ -9,7 +10,7 @@ const createPlayerProfile = async (playerData: Partial<IAMPlayer>) => {
 // Update player profile
 const updatePlayerProfile = async (
   playerId: string,
-  updateData: Partial<IAMPlayer>
+  updateData: Partial<IPlayer>
 ) => {
   return await Player.findOneAndUpdate(
     { user_id: playerId },

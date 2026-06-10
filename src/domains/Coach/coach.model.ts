@@ -1,64 +1,29 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+import mongoose, { Schema } from "mongoose";
+import { socialMediaSchema } from "../User/socialLinkSchema";
+import { ICoach, ICoachService } from "./coach.interface";
 
-// Interface for Coach Services
-interface CoachServices {
-  serviceName: string;
-  description: string;
-  price: number;
-  durations: string;
-  type: "video_review" | "consultation";
-  link?: string;
-}
-
-export interface IAMCoach extends Document {
-  _id: Types.ObjectId;
-  user_id: Types.ObjectId;
-  fullName: string;
-  profilePhoto: string;
-  experienceYears: number;
-  about: string;
-  areaOfExpertise: string[];
-  coachingExperiences: string;
-  coachingPhilosophy: string;
-  servicesOffered: CoachServices[];
-  facebook_link: string;
-  twitter_link: string;
-  instagram_link: string;
-  linkedin_link: string;
-}
-
-const coachSchema = new Schema<IAMCoach>(
+const coachCerviceSchema = new Schema<ICoachService>({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  sessionFee: { type: Number, required: true },
+  preferrredTime: { type: String, required: true },
+}, {
+  _id: false
+});
+const coachSchema = new Schema<ICoach>(
   {
-    user_id: { type: Schema.Types.ObjectId, ref: "User", required: true }, // Refers to the "User" model (assuming user is another collection in your app)
-    fullName: { type: String, required: true },
-    profilePhoto: { type: String, default: "" },
-    experienceYears: { type: Number, required: true },
+    author: { type: Schema.Types.ObjectId, ref: "User", required: true },
     about: { type: String, required: true },
-    areaOfExpertise: [{ type: String, required: true }],
-    coachingExperiences: { type: String, required: true },
+    location: { type: String, required: true },
+    service: { type: [coachCerviceSchema], default: [] },
+    areaOfExpertise: { type: [String], required: true },
+    coachExperiences: { type: String, required: true },
     coachingPhilosophy: { type: String, required: true },
-    servicesOffered: [
-      {
-        serviceName: { type: String, required: true },
-        description: { type: String, required: true },
-        price: { type: Number, required: true },
-        durations: { type: String, required: true },
-        type: {
-          type: String,
-          enum: ["video_review", "consultation"],
-          required: true,
-        },
-        link: { type: String, default: "" },
-      },
-    ],
-    facebook_link: { type: String, default: "" },
-    twitter_link: { type: String, default: "" },
-    instagram_link: { type: String, default: "" },
-    linkedin_link: { type: String, default: "" },
+    socialMedia: socialMediaSchema,
   },
   { timestamps: true }
 );
 
-const Coach = mongoose.model<IAMCoach>("Coach", coachSchema);
+const Coach = mongoose.model<ICoach>("Coach", coachSchema);
 
 export default Coach;

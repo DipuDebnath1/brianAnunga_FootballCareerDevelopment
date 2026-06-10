@@ -1,4 +1,5 @@
-import Club, { IClub } from "./club.model";
+import Club from "./club.model";
+import { IClub } from "./club.interface";
 
 // Create a new club
 const createClub = async (clubData: Partial<IClub>) => {
@@ -24,8 +25,8 @@ const getClubById = async (clubId: string) => {
 };
 
 // Get club by name
-const getClubByName = async (name: string) => {
-  return await Club.findOne({ name: new RegExp(name, "i") }); // Case insensitive search
+const getClubByName = async (clubName: string) => {
+  return await Club.findOne({ clubName: new RegExp(clubName, "i") });
 };
 
 // Get all clubs with optional filters
@@ -44,7 +45,7 @@ const getAllClubs = async (
     query = { ...query, location: new RegExp(location, "i") }; // Case insensitive search
   }
 
-  return await Club.find(query).sort({ name: 1 }); // Sort alphabetically by name
+  return await Club.find(query).sort({ clubName: 1 });
 };
 
 // Delete club by ID

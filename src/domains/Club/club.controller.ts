@@ -3,30 +3,21 @@ import httpStatus from "http-status";
 import AppError from "../../ErrorHandler/AppError";
 import catchAsync from "../../utills/catchAsync";
 import sendResponse from "../../utills/sendResponse";
+import { IClub } from "./club.interface";
 import clubService from "./club.service";
 
 const createClub: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-    const { name, logo, description, founded, location, league, stadium, coach, teamColor, website, socialMedia } = req.body;
+    const { clubName } = req.body;
 
-    const existingClub = await clubService.getClubByName(name);
+    const existingClub = clubName
+      ? await clubService.getClubByName(clubName)
+      : null;
     if (existingClub) {
       throw new AppError(httpStatus.CONFLICT, "Club with this name already exists");
     }
 
-    const newClub = await clubService.createClub({
-      name,
-      logo,
-      description,
-      founded,
-      location,
-      league,
-      stadium,
-      coach,
-      teamColor,
-      website,
-      socialMedia,
-    });
+    const newClub = await clubService.createClub(req.body as Partial<IClub>);
 
     sendResponse(res, {
       statusCode: httpStatus.CREATED,

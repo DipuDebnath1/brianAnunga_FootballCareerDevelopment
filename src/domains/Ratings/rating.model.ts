@@ -1,17 +1,5 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
-
-export type RatingType = "coach" | "agent";
-
-export interface IRating extends Document {
-  _id: Types.ObjectId;
-  rating: number; // 1-5 rating
-  review: string; // Review text
-  ratingType: RatingType; // Type of profile being rated
-  profileId: Types.ObjectId; // ID of the coach/agent being rated
-  userId: Types.ObjectId; // ID of the user who gave the rating
-  createdAt: Date;
-  updatedAt: Date;
-}
+import mongoose, { Schema } from "mongoose";
+import { IRating } from "./rating.interface";
 
 const ratingSchema = new Schema<IRating>(
   {
@@ -33,7 +21,7 @@ const ratingSchema = new Schema<IRating>(
     },
     profileId: {
       type: Schema.Types.ObjectId,
-      refPath: 'ratingType', // Dynamically references either Coach or Agent based on ratingType
+      refPath: "ratingType",
       required: true,
     },
     userId: {
@@ -45,9 +33,7 @@ const ratingSchema = new Schema<IRating>(
   { timestamps: true }
 );
 
-// Index for efficient querying by profileId and ratingType
 ratingSchema.index({ profileId: 1, ratingType: 1 });
-// Index for querying by userId
 ratingSchema.index({ userId: 1 });
 
 const Rating = mongoose.model<IRating>("Rating", ratingSchema);

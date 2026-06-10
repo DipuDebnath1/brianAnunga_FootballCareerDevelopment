@@ -1,7 +1,8 @@
-import Coach, { IAMCoach } from "./coach.model";
+import Coach from "./coach.model";
+import { ICoach } from "./coach.interface";
 
 // Create a new coach profile
-const createCoachProfile = async (coachData: Partial<IAMCoach>) => {
+const createCoachProfile = async (coachData: Partial<ICoach>) => {
   const coach = new Coach(coachData);
   return await coach.save();
 };
@@ -9,7 +10,7 @@ const createCoachProfile = async (coachData: Partial<IAMCoach>) => {
 // Update coach profile
 const updateCoachProfile = async (
   coachId: string,
-  updateData: Partial<IAMCoach>
+  updateData: Partial<ICoach>
 ) => {
   return await Coach.findOneAndUpdate(
     { user_id: coachId },

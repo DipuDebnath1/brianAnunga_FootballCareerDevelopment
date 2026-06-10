@@ -5,20 +5,21 @@ import {
   sendPasswordResetOtpMail,
   sendVerificationOtpMail,
 } from "../../lib/sendOtp";
-import User, { IAMUser } from "../User/user.model";
+import User from "../User/user.model";
+import { UserDocument } from "../User/user.interface";
+import { OtpPurpose, UserTokenPayload } from "./auth.interface";
 import {
   createRefreshToken,
   createToken,
-  UserTokenPayload,
   verifyRefreshToken,
 } from "./auth.token.services";
 
-type OtpPurpose = "verify" | "reset";
+type OtpPurposeValue = Exclude<OtpPurpose, null>;
 
 const generateOtp = (): number =>
   Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
 
-const buildTokenPayload = (user: IAMUser): UserTokenPayload => ({
+const buildTokenPayload = (user: UserDocument): UserTokenPayload => ({
   userId: user._id.toString(),
   role: user.role,
   name: user.name,
@@ -26,7 +27,7 @@ const buildTokenPayload = (user: IAMUser): UserTokenPayload => ({
   image: user.image,
 });
 
-export const sanitizeUser = (user: IAMUser) => ({
+export const sanitizeUser = (user: UserDocument) => ({
   _id: user._id,
   name: user.name,
   email: user.email,
@@ -35,7 +36,7 @@ export const sanitizeUser = (user: IAMUser) => ({
   isEmailVerified: user.isEmailVerified,
 });
 
-const issueTokens = (user: IAMUser) => {
+const issueTokens = (user: UserDocument) => {
   const payload = buildTokenPayload(user);
   const accessToken = createToken(
     payload,
@@ -53,7 +54,7 @@ const register = async (userData: {
   role: string;
 }) => {
   const { email, password, name, role } = userData;
-  let data: IAMUser;
+  let data: UserDocument;
 
   const existingUser = await User.findOne({ email, isDeleted: false });
   if (existingUser) {
@@ -61,7 +62,7 @@ const register = async (userData: {
       throw new AppError(httpStatus.CONFLICT, "Email is already taken");
     } else {
       existingUser.oneTimeCode = generateOtp();
-      existingUser.otpPurpose = "verify" as OtpPurpose;
+      existingUser.otpPurpose = "verify" as OtpPurposeValue;
       await existingUser.save();
       await sendVerificationOtpMail(existingUser.email, existingUser.oneTimeCode);
       data = existingUser;
@@ -75,7 +76,7 @@ const register = async (userData: {
       password,
       role,
       oneTimeCode,
-      otpPurpose: "verify" as OtpPurpose,
+      otpPurpose: "verify" as OtpPurposeValue,
     });
   
     await newUser.save();

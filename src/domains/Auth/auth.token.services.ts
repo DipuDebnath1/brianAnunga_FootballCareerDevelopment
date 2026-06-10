@@ -1,14 +1,9 @@
 import jwt, { SignOptions } from "jsonwebtoken";
 import ms from "ms";
 import config from "../../config/index";
+import { UserTokenPayload } from "./auth.interface";
 
-export interface UserTokenPayload {
-  userId: string;
-  role: string;
-  name: string;
-  email: string;
-  image: string;
-}
+export type { UserTokenPayload };
 
 export const createToken = (
   userDetails: UserTokenPayload,

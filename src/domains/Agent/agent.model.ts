@@ -1,54 +1,27 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+import mongoose, { Schema } from "mongoose";
+import { AgentService, IAgent } from "./agent.interface";
+import { socialMediaSchema } from "../User/socialLinkSchema";
 
-// Interface for Coach Services
-interface AgentServices {
-  serviceName: string;
-  description: string;
-  link?: string;
-}
+const agentServiceSchema = new Schema<AgentService>({
+  serviceName: { type: String, required: true },
+  description: { type: String, required: true },
+}, {
+  _id: false
+});
 
-export interface IAMAgent extends Document {
-  _id: Types.ObjectId;
-  user_id: Types.ObjectId;
-  fullName: string;
-  profilePhoto: string;
-  experienceYears: number;
-  about: string;
-  areaOfExpertise: string[];
-  coachingExperiences: string;
-  coachingPhilosophy: string;
-  servicesOffered: AgentServices[];
-  facebook_link: string;
-  twitter_link: string;
-  instagram_link: string;
-  linkedin_link: string;
-}
-
-const agentSchema = new Schema<IAMAgent>(
+const agentSchema = new Schema<IAgent>(
   {
-    user_id: { type: Schema.Types.ObjectId, ref: "User", required: true }, // Refers to the "User" model (assuming user is another collection in your app)
-    fullName: { type: String, required: true },
-    profilePhoto: { type: String, default: "" },
-    experienceYears: { type: Number, required: true },
+    author: { type: Schema.Types.ObjectId, ref: "User", required: true },
     about: { type: String, required: true },
-    areaOfExpertise: [{ type: String, required: true }],
-    coachingExperiences: { type: String, required: true },
-    coachingPhilosophy: { type: String, required: true },
-    servicesOffered: [
-      {
-        serviceName: { type: String, required: true },
-        description: { type: String, required: true },
-        link: { type: String, default: "" },
-      },
-    ],
-    facebook_link: { type: String, default: "" },
-    twitter_link: { type: String, default: "" },
-    instagram_link: { type: String, default: "" },
-    linkedin_link: { type: String, default: "" },
+    location: { type: Number, required: true },
+    service: { type: [agentServiceSchema], default: [] },
+    areaOfExpertise: { type: [String], required: true },
+    experiences: { type: String, required: true },
+    socialMedia: socialMediaSchema,
   },
   { timestamps: true }
 );
 
-const Agent = mongoose.model<IAMAgent>("Agent", agentSchema);
+const Agent = mongoose.model<IAgent>("Agent", agentSchema);
 
 export default Agent;

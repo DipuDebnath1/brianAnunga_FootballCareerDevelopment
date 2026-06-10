@@ -6,7 +6,7 @@ import catchAsync from "../../utills/catchAsync";
 import sendResponse from "../../utills/sendResponse";
 import { ProtectedRequest } from "../../types/protected-request";
 import ratingService from "./rating.service";
-import { RatingType } from "./rating.model";
+import { RatingType } from "./rating.interface";
 
 const assertRatingType = (ratingType: string): RatingType => {
   if (!["coach", "agent"].includes(ratingType)) {

@@ -1,22 +1,7 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+import mongoose, { Schema } from "mongoose";
+import { ICoachVideoRequest } from "./coachVideoRequest.interface";
 
-export interface IAMCoachVideoRequest extends Document {
-  _id: Types.ObjectId;
-  coach_id: Types.ObjectId;
-  user_id: Types.ObjectId;
-  fullName: string;
-  email_address: string;
-  phone_number: number;
-  age: number;
-  video_title: string;
-  video_description: string;
-  video?: string;
-  focus_on: string;
-  coach_feedback?: string;
-  status: "pending" | "accept" | "decline" | "completed";
-}
-
-const coachVideoRequestSchema = new Schema<IAMCoachVideoRequest>(
+const coachVideoRequestSchema = new Schema<ICoachVideoRequest>(
   {
     coach_id: { type: Schema.Types.ObjectId, ref: "Coach", required: true },
     user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -39,7 +24,7 @@ const coachVideoRequestSchema = new Schema<IAMCoachVideoRequest>(
   { timestamps: true }
 );
 
-const CoachVideoRequest = mongoose.model<IAMCoachVideoRequest>(
+const CoachVideoRequest = mongoose.model<ICoachVideoRequest>(
   "CoachVideoRequest",
   coachVideoRequestSchema
 );

@@ -1,8 +1,9 @@
 
-import Agent, { IAMAgent } from "../Agent/agent.model";
+import Agent from "../Agent/agent.model";
+import { IAgent } from "../Agent/agent.interface";
 
 // Create a new agent profile
-const createAgentProfile = async (agentData: Partial<IAMAgent>) => {
+const createAgentProfile = async (agentData: Partial<IAgent>) => {
   const agent = new Agent(agentData);
   return await agent.save();
 };
@@ -10,7 +11,7 @@ const createAgentProfile = async (agentData: Partial<IAMAgent>) => {
 // Update agent profile
 const updateAgentProfile = async (
   agentId: string,
-  updateData: Partial<IAMAgent>,
+  updateData: Partial<IAgent>,
 ) => {
   return await Agent.findOneAndUpdate(
     { user_id: agentId },

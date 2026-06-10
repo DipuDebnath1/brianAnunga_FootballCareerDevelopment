@@ -1,14 +1,5 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
-
-export interface IMessage extends Document {
-  _id: Types.ObjectId;
-  conversationId: Types.ObjectId; // Reference to the conversation
-  senderId: Types.ObjectId; // Reference to the user who sent the message
-  content: string; // Actual message content
-  isRead: boolean; // Array of user IDs who have read the message
-  createdAt: Date;
-  updatedAt: Date;
-}
+import mongoose, { Schema } from "mongoose";
+import { IMessage } from "./message.interface";
 
 const messageSchema = new Schema<IMessage>(
   {
@@ -24,7 +15,6 @@ const messageSchema = new Schema<IMessage>(
   { timestamps: true }
 );
 
-// Index for faster conversation and timestamp-based searches
 messageSchema.index({ conversationId: 1, createdAt: -1 });
 messageSchema.index({ senderId: 1, createdAt: -1 });
 

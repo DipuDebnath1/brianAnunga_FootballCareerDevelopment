@@ -1,9 +1,10 @@
 import { FilterQuery } from "mongoose";
-import CoachVideoRequest, { IAMCoachVideoRequest } from "./coachVideoRequest.model";
+import CoachVideoRequest from "./coachVideoRequest.model";
+import { ICoachVideoRequest } from "./coachVideoRequest.interface";
 import Coach from "../Coach/coach.model";
 
 // Create a new coach video request
-const createCoachVideoRequest = async (requestData: Partial<IAMCoachVideoRequest>) => {
+const createCoachVideoRequest = async (requestData: Partial<ICoachVideoRequest>) => {
   // Check if coach exists
   const coachExists = await Coach.findById(requestData.coach_id);
   if (!coachExists) {
@@ -54,7 +55,7 @@ const getAllCoachVideoRequests = async (
   coachId?: string,
   status?: "pending" | "accept" | "decline" | "completed"
 ) => {
-  const query: FilterQuery<IAMCoachVideoRequest> = {};
+  const query: FilterQuery<ICoachVideoRequest> = {};
 
   // Add filters if provided
   if (userId) {

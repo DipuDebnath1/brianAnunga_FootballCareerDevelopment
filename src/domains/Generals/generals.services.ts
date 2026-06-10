@@ -1,9 +1,5 @@
-import {
-  Subscription,
-  Testimonial,
-  ISubscription,
-  ITestimonial,
-} from "./generals.model";
+import { Subscription, Testimonial } from "./generals.model";
+import { ISubscription, ITestimonial } from "./generals.interface";
 import redis from "../../config/redis";
 
 // Subscription Services

@@ -1,33 +1,8 @@
 import bcrypt from "bcryptjs";
-import mongoose, {
-  HydratedDocument,
-  Model,
-  Schema,
-} from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import validator from "validator";
-import { AllRoles, ROLE, TRoles } from "../../utills/roles";
-
-export interface IUser {
-  name: string;
-  email: string;
-  password: string;
-  image: string;
-  role: TRoles;
-  oneTimeCode: number | null;
-  otpPurpose: "verify" | "reset" | null;
-  isEmailVerified: boolean;
-  isResetPassword: boolean;
-  fcmToken: string | null;
-  isDeleted: boolean;
-}
-
-export interface IUserMethods {
-  isPasswordMatch(_password: string): Promise<boolean>;
-}
-
-export type IAMUser = HydratedDocument<IUser, IUserMethods>;
-
-type UserModel = Model<IUser, Record<string, never>, IUserMethods>;
+import { AllRoles, ROLE } from "../../utills/roles";
+import { IUser, IUserMethods, UserModel } from "./user.interface";
 
 const userSchema = new Schema<IUser, UserModel, IUserMethods>(
   {
@@ -48,6 +23,12 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
         }
       },
     },
+    phone: {
+      type: String,
+      required: false,
+      unique: true,
+      trim: true,
+    },
     image: {
       type: String,
       default: "https://lpx-khalid.s3.ap-southeast-1.amazonaws.com/user.png",
@@ -60,7 +41,7 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
       validate(value: string) {
         if (!value.match(/\d/) || !value.match(/[a-zA-Z]/)) {
           throw new Error(
-            "Password must contain at least one letter and one number"
+            "Password must contain at least one letter and one number",
           );
         }
       },
@@ -81,7 +62,7 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     fcmToken: { type: String, default: null },
     isDeleted: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 userSchema.methods.isPasswordMatch = async function (_password: string) {
