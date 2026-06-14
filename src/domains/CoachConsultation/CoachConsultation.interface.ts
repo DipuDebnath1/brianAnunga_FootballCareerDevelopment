@@ -6,17 +6,17 @@ export const CoachVideoRequestStatus = {
   DECLINE: "decline",
   COMPLETED: "completed",
 } as const;
-export type CoachVideoRequestStatus = (typeof CoachVideoRequestStatus)[keyof typeof CoachVideoRequestStatus];
+export type CoachConsultationStatus = (typeof CoachVideoRequestStatus)[keyof typeof CoachVideoRequestStatus];
 
 export interface ICoachVideoRequest extends Document {
   coach: Types.ObjectId;
   player: Types.ObjectId;
-  title: string;
-  description: string;
-  video?: string;
-  areaOfFocus: string;
-  coachFeedback?: string;
-  status: CoachVideoRequestStatus;
+  topic: string;
+  consultationTime: Date;
+  duration: string;
+  questions: string;
+  meetingLink: string;
+  status: CoachConsultationStatus;
 }
 
 export type CoachVideoRequestDocument = HydratedDocument<ICoachVideoRequest>;

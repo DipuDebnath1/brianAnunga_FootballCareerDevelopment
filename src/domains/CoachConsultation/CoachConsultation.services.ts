@@ -1,12 +1,12 @@
 import { FilterQuery } from "mongoose";
-import CoachVideoRequest from "./coachVideoRequest.model";
-import { ICoachVideoRequest } from "./coachVideoRequest.interface";
 import Coach from "../Coach/coach.model";
+import { ICoachVideoRequest } from "./CoachConsultation.interface";
+import CoachVideoRequest from "./CoachConsultation.model";
 
 // Create a new coach video request
 const createCoachVideoRequest = async (requestData: Partial<ICoachVideoRequest>) => {
   // Check if coach exists
-  const coachExists = await Coach.findById(requestData. );
+  const coachExists = await Coach.findById(requestData.coach);
   if (!coachExists) {
     throw new Error("Coach not found");
   }

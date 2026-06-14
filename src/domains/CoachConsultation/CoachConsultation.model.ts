@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { CoachVideoRequestStatus, ICoachVideoRequest } from "./coachVideoRequest.interface";
+import { CoachVideoRequestStatus, ICoachVideoRequest } from "./CoachConsultation.interface";
 
 const coachVideoRequestSchema = new Schema<ICoachVideoRequest>(
   {
