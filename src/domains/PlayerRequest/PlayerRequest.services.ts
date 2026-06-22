@@ -1,7 +1,7 @@
 import { FilterQuery } from "mongoose";
-import AgentRequest from "./agentRequest.model";
-import { IAgentRequest } from "./agentRequest.interface";
 import Agent from "../Agent/agent.model";
+import AgentRequest from "./PlayerRequest.model";
+import { IAgentRequest } from "./PlayerRequest.interface";
 
 
 // Create a new agent request

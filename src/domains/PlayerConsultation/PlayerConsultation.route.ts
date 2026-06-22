@@ -1,5 +1,5 @@
 import { Router } from "express";
-import coachVideoRequestController from "./CoachConsultation.controller";
+import coachVideoRequestController from "./PlayerConsultation.controller";
 import auth from "../../middlewares/auth";
 
 const router = Router();

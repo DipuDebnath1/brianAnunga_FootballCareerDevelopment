@@ -1,17 +1,14 @@
 import { Document, HydratedDocument, Model, Types } from "mongoose";
 import { TSocialMedia } from "../User/socialLinkSchema";
 
-export interface AgentService {
-  serviceName: string;
-  description: string;
-}
-
-
 export interface IAgent extends Document {
   author: Types.ObjectId;
   about: string;
   location: number;
-  service: AgentService[];
+  service: {
+    serviceName: string;
+    description: string;
+  };
   areaOfExpertise: string[];
   experiences: string;
   socialMedia: TSocialMedia;

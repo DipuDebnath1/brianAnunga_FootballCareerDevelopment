@@ -1,7 +1,7 @@
 import { FilterQuery } from "mongoose";
 import Coach from "../Coach/coach.model";
-import { ICoachVideoRequest } from "./CoachConsultation.interface";
-import CoachVideoRequest from "./CoachConsultation.model";
+import { ICoachVideoRequest } from "./PlayerConsultation.interface";
+import CoachVideoRequest from "./PlayerConsultation.model";
 
 // Create a new coach video request
 const createCoachVideoRequest = async (requestData: Partial<ICoachVideoRequest>) => {

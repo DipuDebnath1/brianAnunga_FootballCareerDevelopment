@@ -1,5 +1,5 @@
 import { Router } from "express";
-import agentRequestController from "./agentRequest.controller";
+import agentRequestController from "./PlayerRequest.controller";
 import auth from "../../middlewares/auth";
 
 const router = Router();

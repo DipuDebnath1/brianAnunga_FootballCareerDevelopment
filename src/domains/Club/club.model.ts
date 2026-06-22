@@ -10,8 +10,8 @@ const clubSchema = new Schema<IClub>(
     cludeName: { type: String, required: true },
     location: { type: String, required: true },
     clubeOverview: { type: String, required: true },
-    playersResponded: { type: String, required: true },
-    successTransfers: { type: String, required: true },
+    playersResponded: { type: Number, required: false, default: 0 },
+    successTransfers: { type: Number, required: false, default: 0 },
     socialMedia: socialMediaSchema,
   },
   { timestamps: true }

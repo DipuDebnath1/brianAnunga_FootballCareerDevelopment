@@ -1,6 +1,6 @@
 import { FilterQuery } from "mongoose";
-import CoachVideoRequest from "./coachVideoRequest.model";
-import { ICoachVideoRequest } from "./coachVideoRequest.interface";
+import CoachVideoRequest from "./PlayerVideoRequests.model";
+import { ICoachVideoRequest } from "./PlayerVideoRequests.interface";
 import Coach from "../Coach/coach.model";
 
 // Create a new coach video request

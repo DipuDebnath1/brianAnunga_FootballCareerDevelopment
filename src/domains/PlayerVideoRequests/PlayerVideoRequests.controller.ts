@@ -4,7 +4,7 @@ import AppError from "../../ErrorHandler/AppError";
 import catchAsync from "../../utills/catchAsync";
 import sendResponse from "../../utills/sendResponse";
 import { ProtectedRequest } from "../../types/protected-request";
-import coachVideoRequestService from "./coachVideoRequest.services";
+import coachVideoRequestService from "./PlayerVideoRequests.services";
 
 type VideoRequestStatus = "pending" | "accept" | "decline" | "completed";
 const VALID_STATUSES: VideoRequestStatus[] = ["pending", "accept", "decline", "completed"];

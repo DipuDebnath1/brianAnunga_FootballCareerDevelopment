@@ -8,8 +8,8 @@ export interface IClub extends Document {
   cludeName: string;
   location: string;
   clubeOverview: string;
-  playersResponded: string;
-  successTransfers: string;
+  playersResponded: number;
+  successTransfers: number;
   socialMedia: TSocialMedia;
 }
 

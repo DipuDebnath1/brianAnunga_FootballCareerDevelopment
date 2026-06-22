@@ -4,7 +4,7 @@ import AppError from "../../ErrorHandler/AppError";
 import catchAsync from "../../utills/catchAsync";
 import sendResponse from "../../utills/sendResponse";
 import { ProtectedRequest } from "../../types/protected-request";
-import agentRequestService from "./agentRequest.services";
+import agentRequestService from "./PlayerRequest.services";
 
 type AgentRequestStatus = "pending" | "accept" | "decline" | "completed";
 const VALID_STATUSES: AgentRequestStatus[] = ["pending", "accept", "decline", "completed"];
