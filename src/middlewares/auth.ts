@@ -2,7 +2,7 @@ import { NextFunction, Response } from "express";
 import httpStatus from "http-status";
 import AppError from "../ErrorHandler/AppError";
 import User from "../domains/User/user.model";
-import { UserTokenPayload } from "../domains/Auth/auth.token.services";
+import { AccessTokenPayload } from "../domains/tokens/token.interface";
 import { ProtectedRequest } from "../types/protected-request";
 import { accessTokenDecoded } from "../utills/accessTokenDecoded";
 import roles, { Permission, TRoles } from "../utills/roles";
@@ -28,8 +28,8 @@ const auth =
         );
       }
 
-      const decodedData = accessTokenDecoded(token) as UserTokenPayload;
-      const userId = decodedData.userId;
+      const decodedData = accessTokenDecoded(token) as AccessTokenPayload;
+      const userId = decodedData.sub;
 
       const user = await User.findById(userId);
       if (!user) {

@@ -23,6 +23,11 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
         }
       },
     },
+    phone: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     image: {
       type: String,
       default: "https://lpx-khalid.s3.ap-southeast-1.amazonaws.com/user.png",

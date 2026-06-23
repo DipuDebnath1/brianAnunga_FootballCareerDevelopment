@@ -1,67 +1,70 @@
 import { Router } from "express";
-import authController from "./auth.controller";
-import validate from "../../middlewares/validation.middleware";
-import authValidator from "./auth.validation";
+import validationRequest from "../../middlewares/validationRequest";
 import auth from "../../middlewares/auth";
+import userFileUploadMiddleware from "../../middlewares/fileUpload.middleware";
+import { AuthController } from "./auth.controller";
+import AuthValidation from "./auth.validation";
 import { ROLE } from "../../utills/roles";
 
 const router = Router();
+const fileUpload = userFileUploadMiddleware("uploads/users");
 
 router.post(
-  "/register",
-  validate(authValidator.registerValidation),
-  authController.register
+  "/signup",
+  fileUpload.single("image"),
+  validationRequest(AuthValidation.userSignUpValidation),
+  AuthController.createUser
 );
 
 router.post(
-  "/verify-email",
-  validate(authValidator.verificationValidation),
-  authController.verifyEmail
+  "/signin",
+  validationRequest(AuthValidation.userSignInValidation),
+  AuthController.LoginUser
 );
 
 router.post(
-  "/login",
-  validate(authValidator.loginValidation),
-  authController.login
+  "/admin_signin",
+  validationRequest(AuthValidation.userSignInValidation),
+  AuthController.LoginAdmin
 );
 
 router.post(
-  "/forgot-password",
-  validate(authValidator.forgotPasswordValidation),
-  authController.forgotPassword
+  "/login_with_oauth",
+  validationRequest(AuthValidation.loginWithOAuthValidation),
+  AuthController.LoginWithOAuth
 );
 
 router.post(
-  "/reset-password",
-  validate(authValidator.resetPasswordValidation),
-  authController.resetPassword
+  "/verify_otp",
+  validationRequest(AuthValidation.VerifyOtpValidation),
+  AuthController.VerifyOtp
 );
 
 router.post(
-  "/change-password",
+  "/forgot_password",
+  validationRequest(AuthValidation.ForgotPasswordValidation),
+  AuthController.ForgotPassword
+);
+
+router.post(
+  "/reset_password",
+  validationRequest(AuthValidation.ResetPasswordValidation),
+  AuthController.ResetPassword
+);
+
+router.post(
+  "/update_password",
   auth(ROLE.common),
-  validate(authValidator.changePasswordValidation),
-  authController.changePassword
+  validationRequest(AuthValidation.updatePasswordValidation),
+  AuthController.UpdatePassword
 );
+
+router.post("/logout", AuthController.LogoutUser);
 
 router.post(
-  "/refresh-token",
-  validate(authValidator.refreshTokenValidation),
-  authController.refreshToken
+  "/refresh_token",
+  validationRequest(AuthValidation.refreshTokenVerification),
+  AuthController.RefreshUserToken
 );
-
-router.post(
-  "/resend-verification",
-  validate(authValidator.resendVerificationValidation),
-  authController.resendVerification
-);
-
-router.delete(
-  "/delete/:userId",
-  auth(ROLE.commonAdmin),
-  authController.deleteUser
-);
-
-router.post("/logout", authController.logout);
 
 export default router;

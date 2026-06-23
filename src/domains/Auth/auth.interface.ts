@@ -1,20 +1,12 @@
-export interface UserTokenPayload {
-  userId: string;
-  role: string;
-  name: string;
-  email: string;
-  image: string;
-}
-
-export type OtpPurpose = "verify" | "reset";
-
 export type {
-  RegisterInput,
-  LoginInput,
-  VerificationInput,
+  SignUpInput,
+  SignInInput,
+  VerifyOtpInput,
   ForgotPasswordInput,
   ResetPasswordInput,
-  ChangePasswordInput,
+  UpdatePasswordInput,
   RefreshTokenInput,
-  ResendVerificationInput,
+  LoginWithOAuthInput,
 } from "./auth.validation";
+
+export type { AccessTokenPayload } from "../tokens/token.interface";

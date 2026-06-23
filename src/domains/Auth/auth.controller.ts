@@ -1,186 +1,244 @@
-import {
-  NextFunction,
-  Request,
-  RequestHandler,
-  Response,
-} from "express";
+import { NextFunction, Request, RequestHandler, Response } from "express";
 import httpStatus from "http-status";
+import config from "../../config/index";
 import AppError from "../../ErrorHandler/AppError";
 import catchAsync from "../../utills/catchAsync";
 import sendResponse from "../../utills/sendResponse";
 import { ProtectedRequest } from "../../types/protected-request";
-import authService from "./auth.service";
+import {
+  generateAuthTokens,
+  invalidateUserAuthToken,
+  refreshUserAuthToken,
+} from "../tokens/token.service";
+import { AuthServices } from "./auth.service";
+import { SignUpInput } from "./auth.interface";
 
-const register: RequestHandler = catchAsync(
+const setWebAuthCookies = (
+  res: Response,
+  tokens: { accessToken: string; refreshToken: string }
+) => {
+  res.cookie("access_token", tokens.accessToken, {
+    httpOnly: true,
+    secure: config.isProduction,
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  res.cookie("refresh_token", tokens.refreshToken, {
+    httpOnly: true,
+    secure: config.isProduction,
+    sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  });
+};
+
+const createUser: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-    const user = await authService.register(req.body);
+    const userData = req.body as SignUpInput;
+
+    if (req.file) {
+      userData.image = `/uploads/users/${req.file.filename}`;
+    }
+
+    const result = await AuthServices.createUser(userData);
 
     sendResponse(res, {
       statusCode: httpStatus.CREATED,
       success: true,
-      message: "User created successfully",
-      data: user,
+      message: "please verify OTP sent to email",
+      data: config.isProduction
+        ? undefined
+        : { oneTimeCode: result?.oneTimeCode ?? null },
     });
   }
 );
 
-const verifyEmail: RequestHandler = catchAsync(
+const LoginUser: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-    const { email, code } = req.body;
-    const result = await authService.verifyEmail(email, Number(code));
+    const data = await AuthServices.loginUser(req.body);
+    const tokens = await generateAuthTokens(data._id.toString());
+
+    if (req.body?.device === "web") {
+      setWebAuthCookies(res, tokens);
+    }
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: result.message,
-      data: result,
+      message: "User Sign in successfully",
+      data,
+      tokens,
     });
   }
 );
 
-const login: RequestHandler = catchAsync(
+const LoginAdmin: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-    const { email, password, fcmToken } = req.body;
-    const result = await authService.loginUser(email, password, fcmToken);
+    const data = await AuthServices.loginUser(req.body);
+
+    if (data.role !== "admin" && data.role !== "superAdmin") {
+      throw new AppError(httpStatus.UNAUTHORIZED, "wrong credentials");
+    }
+
+    const tokens = await generateAuthTokens(data._id.toString());
+    setWebAuthCookies(res, tokens);
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: "Login successful",
-      data: { user: result.user },
-      tokens: {
-        accessToken: result.accessToken,
-        refreshToken: result.refreshToken,
-      },
+      message: "Admin Sign in successfully",
+      data,
+      tokens,
     });
   }
 );
 
-const forgotPassword: RequestHandler = catchAsync(
+const VerifyOtp: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-    const result = await authService.forgotPassword(req.body.email);
+    const { email, oneTimeCode } = req.body;
+    await AuthServices.verifyOtp(email, oneTimeCode);
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: result.message,
-      data: result,
+      message: "oneTimeCode verified successfully",
+      data: {},
     });
   }
 );
 
-const resetPassword: RequestHandler = catchAsync(
+const ForgotPassword: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
-    const { code, newPassword, email } = req.body;
-    const result = await authService.resetPassword(email, code, newPassword);
+    const { email } = req.body;
+    const result = await AuthServices.forgotPassword(email);
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: result.message,
-      data: result,
+      message: "OTP sent to email",
+      data: config.isProduction
+        ? undefined
+        : { oneTimeCode: result?.oneTimeCode ?? null },
     });
   }
 );
 
-const changePassword: RequestHandler = catchAsync(
+const ResetPassword: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+    await AuthServices.resetPassword(email, password);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Password reset successfully",
+      data: {},
+    });
+  }
+);
+
+const UpdatePassword: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
     const { oldPassword, newPassword } = req.body;
-    const { user } = req as ProtectedRequest;
 
-    const result = await authService.changePassword(
-      user!._id,
-      oldPassword,
-      newPassword
-    );
+    await AuthServices.updatePassword(user!.email, oldPassword, newPassword);
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: result.message,
-      data: result,
+      message: "Password changed successfully",
+      data: {},
     });
   }
 );
 
-const resendVerification: RequestHandler = catchAsync(
-  async (req: Request, res: Response) => {
-    const result = await authService.resendVerificationEmail(req.body.email);
-
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: result.message,
-      data: result,
-    });
-  }
-);
-
-const refreshToken: RequestHandler = catchAsync(
-  async (req: Request, res: Response) => {
-    const { refreshToken: token } = req.body;
-    const result = await authService.refreshAccessToken(token);
-
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: "Token refreshed successfully",
-      data: { user: result.user },
-      tokens: { accessToken: result.accessToken, refreshToken: token },
-    });
-  }
-);
-
-const deleteUser: RequestHandler = catchAsync(
-  async (req: Request, res: Response) => {
-    const { user } = req as ProtectedRequest;
-    const result = await authService.deleteUser(
-      req.params.userId as string,
-      user!._id,
-      user!.role
-    );
-
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: result.message,
-      data: result,
-    });
-  }
-);
-
-const logout: RequestHandler = catchAsync(
+const LogoutUser: RequestHandler = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { refreshToken } = req.body;
+    let token: string | undefined = req.cookies?.refresh_token;
 
-    if (!refreshToken) {
-      return next(
-        new AppError(httpStatus.BAD_REQUEST, "Refresh token is required")
+    if (!token) token = req.body.refresh_token;
+    if (!token) {
+      return next(new AppError(httpStatus.BAD_REQUEST, "Token is required"));
+    }
+
+    await invalidateUserAuthToken(token);
+    res.clearCookie("access_token");
+    res.clearCookie("refresh_token");
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "User logged out successfully",
+      data: null,
+    });
+  }
+);
+
+const RefreshUserToken: RequestHandler = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    let token: string | undefined = req.cookies?.refresh_token;
+
+    if (!token) token = req.body.refresh_token;
+    if (!token) {
+      return next(new AppError(httpStatus.BAD_REQUEST, "Token is required"));
+    }
+
+    const tokens = await refreshUserAuthToken(token);
+
+    if (req.body?.type === "web") {
+      setWebAuthCookies(res, tokens);
+    }
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "User token refreshed successfully",
+      data: null,
+      tokens,
+    });
+  }
+);
+
+const LoginWithOAuth: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { token, provider, name, email, image } = req.body;
+
+    if (!token || !provider) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "Token and provider are required"
       );
     }
 
-    const result = await authService.logout(refreshToken);
+    if (provider !== "google") {
+      throw new AppError(httpStatus.BAD_REQUEST, "Invalid provider");
+    }
+
+    const result = await AuthServices.googleLogin(name, email, image);
+    const tokens = await generateAuthTokens(result._id.toString());
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: result.message,
+      message: "User logged in successfully",
       data: result,
+      tokens,
     });
   }
 );
 
-const authController = {
-  register,
-  verifyEmail,
-  login,
-  forgotPassword,
-  resetPassword,
-  changePassword,
-  resendVerification,
-  refreshToken,
-  deleteUser,
-  logout,
+export const AuthController = {
+  createUser,
+  LoginUser,
+  LoginAdmin,
+  LogoutUser,
+  LoginWithOAuth,
+  UpdatePassword,
+  ResetPassword,
+  ForgotPassword,
+  VerifyOtp,
+  RefreshUserToken,
 };
 
-export default authController;
+export default AuthController;

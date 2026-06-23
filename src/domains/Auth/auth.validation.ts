@@ -1,96 +1,146 @@
 import { z } from "zod";
 import { AllowSignupRoles } from "../../utills/roles";
-import {
-  emailSchema,
-  nameSchema,
-  otpCodeSchema,
-  otpCodeStringSchema,
-  passwordSchema,
-} from "../../utills/zodSchemas";
 
-const registerValidation = z.object({
+const userSignUpValidation = z.object({
   body: z.object({
-    name: nameSchema,
-    email: emailSchema,
-    password: passwordSchema,
-    role: z.enum(AllowSignupRoles, { message: "Role is required" }),
+    name: z
+      .string({ message: "Name is required" })
+      .min(2, "Name must be at least 2 characters"),
+    email: z
+      .string({ message: "Email is required" })
+      .email("Invalid email format"),
+    password: z
+      .string({ message: "Password is required" })
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[a-zA-Z]/, "Password must contain at least one letter")
+      .regex(/\d/, "Password must contain at least one number"),
+    role: z.enum(AllowSignupRoles).optional(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    image: z.string().optional(),
   }),
 });
 
-const verificationValidation = z.object({
+const userSignInValidation = z.object({
   body: z.object({
-    code: otpCodeSchema,
-    email: emailSchema,
-  }),
-});
-
-const loginValidation = z.object({
-  body: z.object({
-    email: emailSchema,
-    password: z.string({ message: "Password is required" }),
+    device: z.enum(["web", "mobile"]).optional(),
+    email: z
+      .string({ message: "Email is required" })
+      .email("Invalid email format"),
+    password: z
+      .string({ message: "Password is required" })
+      .min(1, "Password is required"),
     fcmToken: z.string().optional(),
   }),
 });
 
-const forgotPasswordValidation = z.object({
+const VerifyOtpValidation = z.object({
   body: z.object({
-    email: emailSchema,
+    email: z
+      .string({ message: "Email is required" })
+      .email("Invalid email format"),
+    oneTimeCode: z
+      .string({ message: "oneTimeCode is required" })
+      .length(6, "oneTimeCode must be 6 digits"),
   }),
 });
 
-const resetPasswordValidation = z.object({
+const ForgotPasswordValidation = z.object({
   body: z.object({
-    code: otpCodeStringSchema,
-    email: emailSchema,
-    newPassword: passwordSchema,
+    email: z
+      .string({ message: "Email is required" })
+      .email("Invalid email format"),
   }),
 });
 
-const changePasswordValidation = z.object({
+const ResetPasswordValidation = z.object({
+  body: z.object({
+    email: z
+      .string({ message: "Email is required" })
+      .email("Invalid email format"),
+    password: z
+      .string({ message: "New password is required" })
+      .min(8, "New password must be at least 8 characters")
+      .regex(/[a-zA-Z]/, "Password must contain at least one letter")
+      .regex(/\d/, "Password must contain at least one number"),
+  }),
+});
+
+const updatePasswordValidation = z.object({
+  body: z.object({
+    oldPassword: z.string({ message: "Old password is required" }),
+    newPassword: z
+      .string({ message: "New password is required" })
+      .min(8, "New password must be at least 8 characters")
+      .regex(/[a-zA-Z]/, "Password must contain at least one letter")
+      .regex(/\d/, "Password must contain at least one number"),
+  }),
+});
+
+const emailVerificationSchema = z.object({
+  body: z.object({
+    email: z
+      .string({ message: "Email is required" })
+      .email("Invalid email format"),
+    oneTimeCode: z
+      .string({ message: "oneTimeCode code is required" })
+      .length(6, "oneTimeCode code must be 6 digits"),
+  }),
+});
+
+const logoutVerification = z.object({
+  body: z.object({
+    refresh_token: z
+      .string({ message: "Refresh token is required" })
+      .optional(),
+  }),
+});
+
+const refreshTokenVerification = z.object({
+  body: z.object({
+    refresh_token: z
+      .string({ message: "Refresh token is required" })
+      .optional(),
+    type: z.enum(["web", "mobile"]).optional(),
+  }),
+});
+
+const loginWithOAuthValidation = z.object({
   body: z
     .object({
-      oldPassword: z.string({ message: "Current password is required" }),
-      newPassword: passwordSchema,
-      confirmPassword: z.string({ message: "Confirm password is required" }),
+      name: z.string({ message: "OAuth name is required" }),
+      email: z
+        .string({ message: "OAuth email is required" })
+        .email("Invalid email format"),
+      image: z.string().optional(),
+      token: z.string().optional(),
+      provider: z.enum(["google", "facebook", "twitter", "apple", "github"], {
+        message: "OAuth provider is required",
+      }),
     })
-    .refine((data) => data.confirmPassword === data.newPassword, {
-      message: "Confirm password must match new password",
-      path: ["confirmPassword"],
-    }),
+    .strict(),
 });
 
-const refreshTokenValidation = z.object({
-  body: z.object({
-    refreshToken: z.string({ message: "Refresh token is required" }),
-  }),
-});
+export type SignUpInput = z.infer<typeof userSignUpValidation>["body"];
+export type SignInInput = z.infer<typeof userSignInValidation>["body"];
+export type VerifyOtpInput = z.infer<typeof VerifyOtpValidation>["body"];
+export type ForgotPasswordInput = z.infer<typeof ForgotPasswordValidation>["body"];
+export type ResetPasswordInput = z.infer<typeof ResetPasswordValidation>["body"];
+export type UpdatePasswordInput = z.infer<typeof updatePasswordValidation>["body"];
+export type RefreshTokenInput = z.infer<typeof refreshTokenVerification>["body"];
+export type LoginWithOAuthInput = z.infer<typeof loginWithOAuthValidation>["body"];
 
-const resendVerificationValidation = z.object({
-  body: z.object({
-    email: emailSchema,
-  }),
-});
-
-export type RegisterInput = z.infer<typeof registerValidation>["body"];
-export type LoginInput = z.infer<typeof loginValidation>["body"];
-export type VerificationInput = z.infer<typeof verificationValidation>["body"];
-export type ForgotPasswordInput = z.infer<typeof forgotPasswordValidation>["body"];
-export type ResetPasswordInput = z.infer<typeof resetPasswordValidation>["body"];
-export type ChangePasswordInput = z.infer<typeof changePasswordValidation>["body"];
-export type RefreshTokenInput = z.infer<typeof refreshTokenValidation>["body"];
-export type ResendVerificationInput = z.infer<
-  typeof resendVerificationValidation
->["body"];
-
-const authValidator = {
-  registerValidation,
-  verificationValidation,
-  loginValidation,
-  forgotPasswordValidation,
-  resetPasswordValidation,
-  changePasswordValidation,
-  refreshTokenValidation,
-  resendVerificationValidation,
+const AuthValidation = {
+  userSignUpValidation,
+  userSignInValidation,
+  VerifyOtpValidation,
+  ForgotPasswordValidation,
+  ResetPasswordValidation,
+  updatePasswordValidation,
+  emailVerificationSchema,
+  refreshTokenVerification,
+  logoutVerification,
+  loginWithOAuthValidation,
 };
 
-export default authValidator;
+export default AuthValidation;

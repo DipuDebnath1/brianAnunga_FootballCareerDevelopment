@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from "express";
-import catchAsync from "./catchAsync";
+import catchAsync from "../utills/catchAsync";
 import {
   applyParsedRequest,
   parseRequest,
   RequestValidationSchema,
-} from "./zodValidation";
+} from "../utills/zodValidation";
 
 const validationRequest = (schema: RequestValidationSchema) => {
   return catchAsync(async (req: Request, _res: Response, next: NextFunction) => {

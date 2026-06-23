@@ -1,137 +1,34 @@
 import httpStatus from "http-status";
 import AppError from "../../ErrorHandler/AppError";
-import config from "../../config/index";
-import {
-  sendPasswordResetOtpMail,
-  sendVerificationOtpMail,
-} from "../../lib/sendOtp";
+import { sendVerificationOtpMail } from "../../lib/sendOtp";
+import { generateOtp } from "../../utills/generateOtp";
+import { ROLE } from "../../utills/roles";
 import User from "../User/user.model";
 import { UserDocument } from "../User/user.interface";
-import { OtpPurpose, UserTokenPayload } from "./auth.interface";
-import {
-  createRefreshToken,
-  createToken,
-  verifyRefreshToken,
-} from "./auth.token.services";
+import { SignInInput, SignUpInput } from "./auth.interface";
 
-type OtpPurposeValue = Exclude<OtpPurpose, null>;
+const loginUser = async (loginData: SignInInput) => {
+  const { email, password, fcmToken } = loginData;
 
-const generateOtp = (): number =>
-  Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
-
-const buildTokenPayload = (user: UserDocument): UserTokenPayload => ({
-  userId: user._id.toString(),
-  role: user.role,
-  name: user.name,
-  email: user.email,
-  image: user.image,
-});
-
-export const sanitizeUser = (user: UserDocument) => ({
-  _id: user._id,
-  name: user.name,
-  email: user.email,
-  image: user.image,
-  role: user.role,
-  isEmailVerified: user.isEmailVerified,
-});
-
-const issueTokens = (user: UserDocument) => {
-  const payload = buildTokenPayload(user);
-  const accessToken = createToken(
-    payload,
-    config.jwt.secret,
-    config.jwt.expiresIn
-  );
-  const refreshToken = createRefreshToken(payload);
-  return { accessToken, refreshToken };
-};
-
-const register = async (userData: {
-  name: string;
-  email: string;
-  password: string;
-  role: string;
-}) => {
-  const { email, password, name, role } = userData;
-  let data: UserDocument;
-
-  const existingUser = await User.findOne({ email, isDeleted: false });
-  if (existingUser) {
-    if (existingUser.isEmailVerified) {
-      throw new AppError(httpStatus.CONFLICT, "Email is already taken");
-    } else {
-      existingUser.oneTimeCode = generateOtp();
-      existingUser.otpPurpose = "verify" as OtpPurposeValue;
-      await existingUser.save();
-      await sendVerificationOtpMail(existingUser.email, existingUser.oneTimeCode);
-      data = existingUser;
-    }
-  }
-  else {
-    const oneTimeCode = generateOtp();
-    const newUser = new User({
-      name,
-      email,
-      password,
-      role,
-      oneTimeCode,
-      otpPurpose: "verify" as OtpPurposeValue,
-    });
-  
-    await newUser.save();
-    await sendVerificationOtpMail(newUser.email, oneTimeCode);
-    data = newUser;
-  }
-
-  return sanitizeUser(data);
-};
-
-const verifyEmail = async (email: string, code: number) => {
   const user = await User.findOne({ email, isDeleted: false }).select(
-    "name email oneTimeCode otpPurpose isEmailVerified"
-  );
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, "User not found");
-  }
-  if (user.isEmailVerified) {
-    throw new AppError(httpStatus.CONFLICT, "Email is already verified");
-  }
-  if (user.otpPurpose !== "verify" || user.oneTimeCode !== code) {
-    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid verification code");
-  }
-
-  user.isEmailVerified = true;
-  user.oneTimeCode = null;
-  user.otpPurpose = null;
-  await user.save();
-
-  return { message: "Email verification successful" };
-};
-
-const loginUser = async (
-  email: string,
-  password: string,
-  fcmToken?: string
-) => {
-  const user = await User.findOne({ email, isDeleted: false }).select(
-    "name email image password role isEmailVerified fcmToken isDeleted"
+    "name email image role password isDeleted isEmailVerified fcmToken"
   );
 
   if (!user) {
-    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid credentials");
+    throw new AppError(httpStatus.NOT_FOUND, "User not found !");
+  }
+
+  if (user.isDeleted) {
+    throw new AppError(httpStatus.BAD_REQUEST, "User account is deleted !");
   }
 
   if (!user.isEmailVerified) {
-    throw new AppError(
-      httpStatus.FORBIDDEN,
-      "Email is not verified. Please check your email to verify."
-    );
+    throw new AppError(httpStatus.UNAUTHORIZED, "Email is not verified !");
   }
 
-  const isMatch = await user.isPasswordMatch(password);
-  if (!isMatch) {
-    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid credentials");
+  const matchPassword = await user.isPasswordMatch(password);
+  if (!matchPassword) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "wrong credentials !");
   }
 
   if (fcmToken) {
@@ -139,163 +36,168 @@ const loginUser = async (
     await user.save();
   }
 
-  const { accessToken, refreshToken } = issueTokens(user);
+  return user;
+};
 
-  return { user: sanitizeUser(user), accessToken, refreshToken };
+const createUser = async (userData: SignUpInput) => {
+  const { email, password, name, phone, image, role } = userData;
+  const existingUser = await User.findOne({ email });
+
+  if (existingUser) {
+    if (existingUser.isDeleted) {
+      throw new AppError(httpStatus.FORBIDDEN, "User is deleted");
+    }
+
+    if (existingUser.isEmailVerified) {
+      throw new AppError(httpStatus.CONFLICT, "User already exists");
+    }
+
+    existingUser.name = name;
+    existingUser.password = password;
+    if (phone) existingUser.phone = phone;
+    if (image) existingUser.image = image;
+    if (role) existingUser.role = role;
+
+    const code = generateOtp();
+    existingUser.oneTimeCode = Number(code);
+    existingUser.isResetPassword = false;
+    await existingUser.save();
+    await sendVerificationOtpMail(existingUser.email, code);
+
+    return existingUser;
+  }
+
+  const code = generateOtp();
+  const newUser = await User.create({
+    name,
+    email,
+    password,
+    phone,
+    image,
+    role: role ?? ROLE.user,
+    oneTimeCode: Number(code),
+  });
+
+  await sendVerificationOtpMail(newUser.email, code);
+  return newUser;
 };
 
 const forgotPassword = async (email: string) => {
-  const user = await User.findOne({ email, isDeleted: false });
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, "User not found");
-  }
-
-  const resetCode = generateOtp();
-  user.oneTimeCode = resetCode;
-  user.otpPurpose = "reset";
-  await user.save();
-
-  await sendPasswordResetOtpMail(user.email, resetCode);
-
-  return { message: "Password reset email sent" };
-};
-
-const resetPassword = async (
-  email: string,
-  code: string,
-  newPassword: string
-) => {
-  const user = await User.findOne({
-    email,
-    isDeleted: false,
-    oneTimeCode: Number(code),
-    otpPurpose: "reset",
-  });
-
-  if (!user) {
-    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid reset code");
-  }
-
-  user.password = newPassword;
-  user.isResetPassword = true;
-  user.oneTimeCode = null;
-  user.otpPurpose = null;
-  await user.save();
-
-  return { message: "Password successfully reset" };
-};
-
-const changePassword = async (
-  userId: string,
-  oldPassword: string,
-  newPassword: string
-) => {
-  const user = await User.findOne({ _id: userId, isDeleted: false });
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, "User not found");
-  }
-
-  const isMatch = await user.isPasswordMatch(oldPassword);
-  if (!isMatch) {
-    throw new AppError(httpStatus.UNAUTHORIZED, "Current password is incorrect");
-  }
-
-  user.password = newPassword;
-  await user.save();
-
-  return { message: "Password updated successfully" };
-};
-
-const resendVerificationEmail = async (email: string) => {
-  const user = await User.findOne({ email, isDeleted: false });
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, "User not found");
-  }
-  if (user.isEmailVerified) {
-    throw new AppError(httpStatus.CONFLICT, "Email is already verified");
-  }
-
-  const oneTimeCode = generateOtp();
-  user.oneTimeCode = oneTimeCode;
-  user.otpPurpose = "verify";
-  await user.save();
-
-  await sendVerificationOtpMail(user.email, oneTimeCode);
-
-  return { message: "Verification email resent" };
-};
-
-const refreshAccessToken = async (refreshToken: string) => {
-  let payload: UserTokenPayload;
-  try {
-    payload = verifyRefreshToken(refreshToken);
-  } catch {
-    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid or expired refresh token");
-  }
-
-  const user = await User.findOne({
-    _id: payload.userId,
-    isDeleted: false,
-  }).select("name email image role isEmailVerified");
-
-  if (!user || !user.isEmailVerified) {
-    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid or expired refresh token");
-  }
-
-  const accessToken = createToken(
-    buildTokenPayload(user),
-    config.jwt.secret,
-    config.jwt.expiresIn
+  const user = await User.findOne({ email, isDeleted: false }).select(
+    "email isResetPassword oneTimeCode"
   );
 
-  return { accessToken, user: sanitizeUser(user) };
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found !");
+  }
+
+  const code = generateOtp();
+  user.oneTimeCode = Number(code);
+  user.isResetPassword = true;
+  await user.save();
+  sendVerificationOtpMail(user.email, code);
+
+  return user;
 };
 
-const deleteUser = async (
-  targetUserId: string,
-  callerId: string,
-  callerRole: string
-) => {
-  if (callerRole !== "admin" && callerId !== targetUserId) {
+const resetPassword = async (email: string, newPassword: string) => {
+  const user = await User.findOne({ email, isDeleted: false }).select(
+    "email isResetPassword password"
+  );
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found !");
+  }
+
+  if (!user.isResetPassword) {
     throw new AppError(
-      httpStatus.FORBIDDEN,
-      "Forbidden: you can only delete your own account"
+      httpStatus.BAD_REQUEST,
+      "User is not in reset password state !"
     );
   }
 
-  const user = await User.findOne({ _id: targetUserId, isDeleted: false });
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, "User not found");
-  }
-
-  user.isDeleted = true;
+  user.password = newPassword;
+  user.isResetPassword = false;
   await user.save();
 
-  return { message: "User deleted successfully" };
+  return user;
 };
 
-const logout = async (refreshToken: string) => {
-  try {
-    verifyRefreshToken(refreshToken);
-  } catch {
-    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid or expired refresh token");
+const updatePassword = async (
+  email: string,
+  oldPassword: string,
+  newPassword: string
+) => {
+  const user = await User.findOne({ email, isDeleted: false }).select(
+    "email password"
+  );
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found !");
   }
 
-  return { message: "Logged out successfully" };
+  const matchPassword = await user.isPasswordMatch(oldPassword);
+  if (!matchPassword) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Old password is incorrect !");
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  return user;
 };
 
-const authService = {
-  register,
-  verifyEmail,
+const verifyOtp = async (email: string, otp: string) => {
+  const user = await User.findOne({ email, isDeleted: false }).select(
+    "email oneTimeCode isEmailVerified"
+  );
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found !");
+  }
+
+  if (Number(user.oneTimeCode) !== Number(otp)) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Invalid OTP !");
+  }
+
+  user.isEmailVerified = true;
+  user.oneTimeCode = null;
+  await user.save();
+
+  return user;
+};
+
+const googleLogin = async (
+  name: string,
+  email: string,
+  image?: string
+): Promise<UserDocument> => {
+  let user = await User.findOne({ email, isDeleted: false }).select(
+    "name email image role"
+  );
+
+  if (!user) {
+    user = await User.create({
+      name,
+      email,
+      image: image ?? "",
+      password: `OAuth@${generateOtp()}`,
+      isEmailVerified: true,
+      role: ROLE.user,
+    });
+  }
+
+  return user;
+};
+
+export const AuthServices = {
+  createUser,
   loginUser,
   forgotPassword,
   resetPassword,
-  changePassword,
-  resendVerificationEmail,
-  refreshAccessToken,
-  deleteUser,
-  logout,
-  sanitizeUser,
+  updatePassword,
+  verifyOtp,
+  googleLogin,
 };
 
-export default authService;
+export default AuthServices;
