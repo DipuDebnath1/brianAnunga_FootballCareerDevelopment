@@ -8,9 +8,13 @@ export interface UserTokenPayload {
 
 export type OtpPurpose = "verify" | "reset";
 
-export interface RegisterInput {
-  name: string;
-  email: string;
-  password: string;
-  role: string;
-}
+export type {
+  RegisterInput,
+  LoginInput,
+  VerificationInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
+  ChangePasswordInput,
+  RefreshTokenInput,
+  ResendVerificationInput,
+} from "./auth.validation";

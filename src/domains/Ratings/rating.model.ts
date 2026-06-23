@@ -3,39 +3,44 @@ import { IRating } from "./rating.interface";
 
 const ratingSchema = new Schema<IRating>(
   {
+    author: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    rated: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     rating: {
-      type: Number,
+      value: {
+        type: Number,
+        required: true,
+        min: 1,
+        max: 5,
+      },
+      comment: {
+        type: String,
+        required: true,
+        trim: true,
+      },
       required: true,
       min: 1,
       max: 5,
     },
-    review: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    ratingType: {
-      type: String,
-      enum: ["coach", "agent"],
-      required: true,
-    },
-    profileId: {
+    order: {
       type: Schema.Types.ObjectId,
-      refPath: "ratingType",
+      ref: "Order",
       required: true,
     },
-    userId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }
 );
 
-ratingSchema.index({ profileId: 1, ratingType: 1 });
-ratingSchema.index({ userId: 1 });
-
 const Rating = mongoose.model<IRating>("Rating", ratingSchema);
-
 export default Rating;

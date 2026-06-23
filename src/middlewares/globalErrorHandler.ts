@@ -1,14 +1,13 @@
 import { ErrorRequestHandler } from "express";
-import { ValidationError as JoiValidationError } from "joi";
 import { Error as MongooseError } from "mongoose";
 import httpStatus from "http-status";
 import AppError from "../ErrorHandler/AppError";
-import handleJoiError from "../ErrorHandler/handleJoiError";
 import handleValidationError from "../ErrorHandler/handleValidationError";
 import handleDuplicateError from "../ErrorHandler/handleDuplicateError";
 import { IErrorMessage } from "../types/errors.types";
 import logger from "../lib/logger";
 import config from "../config/index";
+import { handleZodError, isZodError } from "../utills/zodValidation";
 
 const isDevelopment = !config.isProduction;
 
@@ -19,8 +18,8 @@ const globalErrorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   let message = "Something went wrong";
   let errorMessages: IErrorMessage[] = [];
 
-  if (error instanceof JoiValidationError || (error as JoiValidationError).isJoi) {
-    const simplified = handleJoiError(error as JoiValidationError);
+  if (isZodError(error)) {
+    const simplified = handleZodError(error);
     statusCode = simplified.statusCode;
     message = simplified.message;
     errorMessages = simplified.errorMessages;
