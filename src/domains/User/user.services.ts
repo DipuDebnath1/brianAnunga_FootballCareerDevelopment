@@ -1,12 +1,21 @@
 import httpStatus from "http-status";
+import mongoose from "mongoose";
 import AppError from "../../ErrorHandler/AppError";
 import { ROLE, TRoles } from "../../utills/roles";
 import Agent from "../Agent/agent.model";
 import Club from "../Club/club.model";
-import coachModels from "../Coach/coach.model";
+import { default as coachModel, default as coachModels } from "../Coach/coach.model";
 import Player from "../Players/players.model";
-import { UpdateProfileInput } from "./user.validation";
 import User from "./user.model";
+
+
+const profileModels = {
+  coach: coachModel.Coach,
+  player: Player,
+  club: Club,
+  agent: Agent,
+};
+
 
 const USER_PROFILE_SELECT =
   "-password -oneTimeCode -isResetPassword -fcmToken -isDeleted";
@@ -41,32 +50,105 @@ const getUserProfile = async (userId: string) => {
   };
 };
 
-const updateUserProfile = async (
+// const updateUserProfile = async (
+//   userId: string,
+//   updateData: UpdateProfileInput
+// ) => {
+//   const user = await User.findById(userId);
+
+//   if (!user || user.isDeleted) {
+//     throw new AppError(httpStatus.NOT_FOUND, "User not found");
+//   }
+
+//   if (updateData.name) {
+//     user.name = updateData.name;
+//   }
+
+//   if (updateData.phone !== undefined) {
+//     user.phone = updateData.phone;
+//   }
+
+//   if (updateData.image) {
+//     user.image = updateData.image;
+//   }
+
+//   await user.save();
+
+//   return getUserProfile(userId);
+// };
+
+
+const updateUserAndProfile = async (
   userId: string,
-  updateData: UpdateProfileInput
+  payload: {
+    user?: Partial<typeof User>;
+    profile?: Partial<typeof profileModels[keyof typeof profileModels]>;
+  } & {
+    user?: Partial<typeof User>;
+    profile?: Record<string, any>;
+  }
 ) => {
-  const user = await User.findById(userId);
+  const session = await mongoose.startSession();
 
-  if (!user || user.isDeleted) {
-    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  try {
+    session.startTransaction();
+
+    const user = await User.findById(userId).session(session);
+
+    if (!user || user.isDeleted) {
+      throw new AppError(404, "User not found");
+    }
+
+    // // ==================
+    // // Update User
+    // // ==================
+
+    // if (payload.user) {
+    //   Object.assign(user, payload.user);
+
+    //   await user.save({ session });
+    // }
+
+    // ==================
+    // Update Profile
+    // ==================
+
+    let updatedProfile = null;
+
+    const ProfileModel =
+      profileModels[user.role as keyof typeof profileModels];
+
+    console.log( payload.profile);
+    if (ProfileModel && payload.profile) {
+      updatedProfile = await (ProfileModel as any).findOneAndUpdate(
+        { author: userId },
+        {
+          $set: payload.profile,
+        },
+        {
+          new: true,
+          runValidators: true,
+          session,
+        }
+      );
+
+      console.log(updatedProfile);
+    }
+
+    await session.commitTransaction();
+
+    return {
+      user,
+      profile: updatedProfile,
+    };
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
   }
-
-  if (updateData.name) {
-    user.name = updateData.name;
-  }
-
-  if (updateData.phone !== undefined) {
-    user.phone = updateData.phone;
-  }
-
-  if (updateData.image) {
-    user.image = updateData.image;
-  }
-
-  await user.save();
-
-  return getUserProfile(userId);
 };
+
 
 const getAllUsers = async () => {
   return User.find({ isDeleted: false }).select(USER_PROFILE_SELECT);
@@ -74,7 +156,8 @@ const getAllUsers = async () => {
 
 export const UserServices = {
   getUserProfile,
-  updateUserProfile,
+  // updateUserProfile,
+  updateUserAndProfile,
   getAllUsers,
 };
 

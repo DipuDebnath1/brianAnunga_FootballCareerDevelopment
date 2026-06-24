@@ -5,6 +5,7 @@ import validationRequest from "../../middlewares/validationRequest";
 import { ROLE } from "../../utills/roles";
 import { UserController } from "./user.controller";
 import UserValidation from "./user.validation";
+import { validateUpdateProfile } from "../../middlewares/validateUpdateProfileMiddlewere";
 
 const router = Router();
 const fileUpload = userFileUploadMiddleware("uploads/users");
@@ -12,11 +13,14 @@ const fileUpload = userFileUploadMiddleware("uploads/users");
 router.get("/self/in", auth(ROLE.common), UserController.getProfile);
 
 router.patch(
-  "/self/update",
+  "/update-profile",
   auth(ROLE.common),
-  fileUpload.single("image"),
-  validationRequest(UserValidation.updateProfileValidation),
-  UserController.updateProfile
+  // fileUpload.single("image"),
+  // validationRequest(UserValidation.userProfileValidation),
+
+
+    validateUpdateProfile(),
+    UserController.updateProfile
 );
 
 router.post(
