@@ -9,7 +9,7 @@ import { UpdateProfileInput } from "./user.validation";
 import User from "./user.model";
 
 const USER_PROFILE_SELECT =
-  "-password -oneTimeCode -otpPurpose -isResetPassword -fcmToken -isDeleted";
+  "-password -oneTimeCode -isResetPassword -fcmToken -isDeleted";
 
 const getRoleProfile = async (userId: string, role: TRoles) => {
   switch (role) {

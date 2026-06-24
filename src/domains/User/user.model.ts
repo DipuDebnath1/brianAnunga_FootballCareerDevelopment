@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import mongoose, { Schema } from "mongoose";
 import validator from "validator";
+import config from "../../config";
 import { AllRoles, ROLE } from "../../utills/roles";
 import { IUser, IUserMethods, UserModel } from "./user.interface";
 
@@ -51,11 +52,6 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
       default: ROLE.user,
     },
     oneTimeCode: { type: Number, default: null },
-    otpPurpose: {
-      type: String,
-      enum: ["verify", "reset", null],
-      default: null,
-    },
     isEmailVerified: { type: Boolean, default: false },
     isResetPassword: { type: Boolean, default: false },
     fcmToken: { type: String, default: null },
@@ -63,6 +59,60 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
   },
   { timestamps: true },
 );
+
+
+// =======================
+// 🔥 INDEXES (OPTIMIZED)
+// =======================
+
+// ✅ Email unique (only for active users)
+userSchema.index(
+  { email: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: false } },
+);
+
+// ✅ Fast login query
+userSchema.index({ email: 1, isDeleted: 1 });
+
+// ✅ Optional phone login
+userSchema.index({ phone: 1 }, { sparse: true });
+
+// ✅ Role-based filtering (admin panel)
+userSchema.index({ role: 1 });
+
+// ✅ Soft delete filtering
+userSchema.index({ isDeleted: 1 });
+
+// =======================
+// 🔍 STATIC METHODS
+// =======================
+
+// Check email already taken
+userSchema.statics.isEmailTaken = async function (
+  email: string,
+  excludeUserId?: string,
+) {
+  const user = await this.findOne({
+    email,
+    isDeleted: false,
+    _id: { $ne: excludeUserId },
+  });
+  return !!user;
+};
+
+// Check phone already taken
+userSchema.statics.isPhoneNumberTaken = async function (
+  phone: string,
+  excludeUserId?: string,
+) {
+  const user = await this.findOne({
+    phone,
+    isDeleted: false,
+    _id: { $ne: excludeUserId },
+  });
+  return !!user;
+};
+
 
 userSchema.methods.isPasswordMatch = async function (_password: string) {
   return bcrypt.compare(_password, this.password);
@@ -73,6 +123,19 @@ userSchema.pre("save", async function (next) {
     this.password = await bcrypt.hash(this.password, 8);
   }
   next();
+});
+
+
+// =======================
+// 🔒 TO JSON TRANSFORM
+// =======================
+
+userSchema.set('toJSON', {
+  transform: function (doc, ret) {
+    delete (ret as any)?.password;
+    if (config.isProduction) delete (ret as any)?.oneTimeCode; // optional security
+    return ret as IUser;
+  },
 });
 
 const User = mongoose.model<IUser, UserModel>("User", userSchema);

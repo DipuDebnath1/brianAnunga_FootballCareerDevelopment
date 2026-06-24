@@ -3,8 +3,8 @@ import AppError from "../../ErrorHandler/AppError";
 import { sendVerificationOtpMail } from "../../lib/sendOtp";
 import { generateOtp } from "../../utills/generateOtp";
 import { ROLE } from "../../utills/roles";
-import User from "../User/user.model";
 import { UserDocument } from "../User/user.interface";
+import User from "../User/user.model";
 import { SignInInput, SignUpInput } from "./auth.interface";
 
 const loginUser = async (loginData: SignInInput) => {
@@ -39,46 +39,37 @@ const loginUser = async (loginData: SignInInput) => {
   return user;
 };
 
-const createUser = async (userData: SignUpInput) => {
-  const { email, password, name, phone, image, role } = userData;
-  const existingUser = await User.findOne({ email });
+const createUser = async (userData: SignUpInput, code: number):Promise<UserDocument> => {
+  const { email, password, name, role } = userData;
+  const existingUser = await User.findOne({ email }).select("email isDeleted isEmailVerified role");
 
   if (existingUser) {
-    if (existingUser.isDeleted) {
+    if (existingUser.isDeleted) 
       throw new AppError(httpStatus.FORBIDDEN, "User is deleted");
-    }
+    
 
-    if (existingUser.isEmailVerified) {
+    if (existingUser.isEmailVerified) 
       throw new AppError(httpStatus.CONFLICT, "User already exists");
-    }
 
     existingUser.name = name;
     existingUser.password = password;
-    if (phone) existingUser.phone = phone;
-    if (image) existingUser.image = image;
     if (role) existingUser.role = role;
 
-    const code = generateOtp();
     existingUser.oneTimeCode = Number(code);
     existingUser.isResetPassword = false;
     await existingUser.save();
-    await sendVerificationOtpMail(existingUser.email, code);
-
+    
     return existingUser;
   }
 
-  const code = generateOtp();
   const newUser = await User.create({
     name,
     email,
     password,
-    phone,
-    image,
     role: role ?? ROLE.user,
     oneTimeCode: Number(code),
   });
 
-  await sendVerificationOtpMail(newUser.email, code);
   return newUser;
 };
 

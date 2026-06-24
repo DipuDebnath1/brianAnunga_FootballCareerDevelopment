@@ -2,16 +2,18 @@ import { NextFunction, Request, RequestHandler, Response } from "express";
 import httpStatus from "http-status";
 import config from "../../config/index";
 import AppError from "../../ErrorHandler/AppError";
-import catchAsync from "../../utills/catchAsync";
-import sendResponse from "../../utills/sendResponse";
+import { sendVerificationOtpMail } from "../../lib/sendOtp";
 import { ProtectedRequest } from "../../types/protected-request";
+import catchAsync from "../../utills/catchAsync";
+import { generateOtp } from "../../utills/generateOtp";
+import sendResponse from "../../utills/sendResponse";
 import {
   generateAuthTokens,
   invalidateUserAuthToken,
   refreshUserAuthToken,
 } from "../tokens/token.service";
-import { AuthServices } from "./auth.service";
 import { SignUpInput } from "./auth.interface";
+import { AuthServices } from "./auth.service";
 
 const setWebAuthCookies = (
   res: Response,
@@ -35,12 +37,12 @@ const setWebAuthCookies = (
 const createUser: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
     const userData = req.body as SignUpInput;
+    const code = generateOtp();
 
-    if (req.file) {
-      userData.image = `/uploads/users/${req.file.filename}`;
-    }
+    
+    const result = await AuthServices.createUser(userData, Number(code));
 
-    const result = await AuthServices.createUser(userData);
+    sendVerificationOtpMail(result.email, code);
 
     sendResponse(res, {
       statusCode: httpStatus.CREATED,
@@ -48,7 +50,7 @@ const createUser: RequestHandler = catchAsync(
       message: "please verify OTP sent to email",
       data: config.isProduction
         ? undefined
-        : { oneTimeCode: result?.oneTimeCode ?? null },
+        : { oneTimeCode: Number(code) },
     });
   }
 );

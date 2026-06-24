@@ -15,9 +15,6 @@ const userSignUpValidation = z.object({
       .regex(/[a-zA-Z]/, "Password must contain at least one letter")
       .regex(/\d/, "Password must contain at least one number"),
     role: z.enum(AllowSignupRoles).optional(),
-    phone: z.string().optional(),
-    address: z.string().optional(),
-    image: z.string().optional(),
   }),
 });
 

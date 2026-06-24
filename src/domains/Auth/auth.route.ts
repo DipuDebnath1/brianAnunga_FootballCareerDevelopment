@@ -1,29 +1,26 @@
 import { Router } from "express";
 import validationRequest from "../../middlewares/validationRequest";
 import auth from "../../middlewares/auth";
-import userFileUploadMiddleware from "../../middlewares/fileUpload.middleware";
 import { AuthController } from "./auth.controller";
 import AuthValidation from "./auth.validation";
 import { ROLE } from "../../utills/roles";
 
 const router = Router();
-const fileUpload = userFileUploadMiddleware("uploads/users");
 
 router.post(
-  "/signup",
-  fileUpload.single("image"),
+  "/register",
   validationRequest(AuthValidation.userSignUpValidation),
   AuthController.createUser
 );
 
 router.post(
-  "/signin",
+  "/login",
   validationRequest(AuthValidation.userSignInValidation),
   AuthController.LoginUser
 );
 
 router.post(
-  "/admin_signin",
+  "/admin_login",
   validationRequest(AuthValidation.userSignInValidation),
   AuthController.LoginAdmin
 );
