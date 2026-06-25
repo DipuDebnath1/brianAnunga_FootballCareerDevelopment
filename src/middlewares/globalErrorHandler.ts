@@ -1,18 +1,20 @@
 import { ErrorRequestHandler } from "express";
-import { Error as MongooseError } from "mongoose";
 import httpStatus from "http-status";
-import AppError from "../ErrorHandler/AppError";
-import handleValidationError from "../ErrorHandler/handleValidationError";
-import handleDuplicateError from "../ErrorHandler/handleDuplicateError";
-import { IErrorMessage } from "../types/errors.types";
-import logger from "../lib/logger";
+import { Error as MongooseError } from "mongoose";
 import config from "../config/index";
+import AppError from "../ErrorHandler/AppError";
+import handleDuplicateError from "../ErrorHandler/handleDuplicateError";
+import handleValidationError from "../ErrorHandler/handleValidationError";
+import logger from "../lib/logger";
+import { IErrorMessage } from "../types/errors.types";
 import { handleZodError, isZodError } from "../utills/zodValidation";
 
 const isDevelopment = !config.isProduction;
 
 const globalErrorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
-  logger.error(`globalErrorHandler: ${error instanceof Error ? error.message : String(error)}`);
+  if(config.isProduction) logger.error(`globalErrorHandler: ${error instanceof Error ? error.message : String(error)}`);
+  else console.log(error);
+  
 
   let statusCode: number = httpStatus.INTERNAL_SERVER_ERROR;
   let message = "Something went wrong";

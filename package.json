@@ -10,7 +10,9 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "prettier": "prettier --ignore-path .gitignore --write \"./src/**/*.+(js|ts|json)\"",
-    "prettier:fix": "npx prettier --write src"
+    "prettier:fix": "npx prettier --write src",
+    "seed": "ts-node src/DB/seeder.ts",
+    "seed:drop": "ts-node src/DB/seeder.ts --drop"
   },
   "keywords": [],
   "author": "Faysal Mridha",

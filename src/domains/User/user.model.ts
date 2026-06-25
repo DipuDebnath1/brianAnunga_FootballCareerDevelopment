@@ -49,7 +49,7 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     role: {
       type: String,
       enum: Object.keys(AllRoles),
-      default: ROLE.user,
+      default: ROLE.player,
     },
     oneTimeCode: { type: Number, default: null },
     isEmailVerified: { type: Boolean, default: false },

@@ -44,11 +44,20 @@ export const applyParsedRequest = (
   if ("body" in parsed && parsed.body !== undefined) {
     req.body = parsed.body;
   }
+
+  // Express 5: req.query / req.params are read-only getters — merge in place
   if ("query" in parsed && parsed.query !== undefined) {
-    req.query = parsed.query as typeof req.query;
+    Object.assign(
+      req.query as Record<string, unknown>,
+      parsed.query as Record<string, unknown>
+    );
   }
+
   if ("params" in parsed && parsed.params !== undefined) {
-    req.params = parsed.params as typeof req.params;
+    Object.assign(
+      req.params as Record<string, unknown>,
+      parsed.params as Record<string, unknown>
+    );
   }
 };
 

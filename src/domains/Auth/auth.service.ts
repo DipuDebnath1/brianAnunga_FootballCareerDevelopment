@@ -66,7 +66,7 @@ const createUser = async (userData: SignUpInput, code: number):Promise<UserDocum
     name,
     email,
     password,
-    role: role ?? ROLE.user,
+    role: role ?? ROLE.player,
     oneTimeCode: Number(code),
   });
 
@@ -174,7 +174,7 @@ const googleLogin = async (
       image: image ?? "",
       password: `OAuth@${generateOtp()}`,
       isEmailVerified: true,
-      role: ROLE.user,
+      role: ROLE.player,
     });
   }
 
