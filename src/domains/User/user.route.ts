@@ -1,14 +1,14 @@
 import { Router } from "express";
 import auth from "../../middlewares/auth";
-import userFileUploadMiddleware from "../../middlewares/fileUpload.middleware";
-import validationRequest from "../../middlewares/validationRequest";
+import fileUploader from "../../middlewares/fileUploader";
 import { validateUpdateProfile } from "../../middlewares/validateUpdateProfileMiddlewere";
+import validationRequest from "../../middlewares/validationRequest";
 import { ROLE } from "../../utills/roles";
 import { UserController } from "./user.controller";
 import UserValidation from "./user.validation";
 
+const fileUpload = fileUploader('users');
 const router = Router();
-const fileUpload = userFileUploadMiddleware("uploads/users");
 
 router.get(
   "/",

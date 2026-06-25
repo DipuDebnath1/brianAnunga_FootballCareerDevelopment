@@ -30,6 +30,7 @@ export interface ICoach extends Document {
   coachExperiences: string;
   coachingPhilosophy: string;
   socialMedia: TSocialMedia;
+  isAvailable: boolean;
 }
 
 export type CoachDocument = HydratedDocument<ICoach>;

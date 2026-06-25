@@ -1,6 +1,7 @@
 import httpStatus from "http-status";
 import mongoose, { FilterQuery, Model } from "mongoose";
 import AppError from "../../ErrorHandler/AppError";
+
 import { ROLE, TRoles } from "../../utills/roles";
 import Agent from "../Agent/agent.model";
 import Club from "../Club/club.model";
@@ -13,6 +14,7 @@ const roleModels = {
   [ROLE.club]: Club,
   [ROLE.agents]: Agent,
 } as const;
+
 
 type ProfileRole = keyof typeof roleModels;
 
@@ -31,10 +33,12 @@ export class UserProfileService {
     return model ? (model as unknown as Model<mongoose.Document>) : null;
   }
 
+  // check if role is supported
   static supportsRole(role: TRoles): boolean {
     return role in roleModels;
   }
 
+  // find role profile by role and filter
   async findRoleProfile(
     role: TRoles,
     filter: RoleProfileFilter = {},
@@ -55,6 +59,7 @@ export class UserProfileService {
     return query;
   }
 
+  // update role profile by role and filter
   async updateRoleProfile(
     role: TRoles,
     filter: RoleProfileFilter,

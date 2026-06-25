@@ -1,14 +1,37 @@
 import httpStatus from "http-status";
-import mongoose, { FilterQuery } from "mongoose";
+import mongoose, { FilterQuery, PipelineStage } from "mongoose";
 import AppError from "../../ErrorHandler/AppError";
-import { TRoles } from "../../utills/roles";
-import userProfileService, { UserProfileService } from "./user.profile.service";
+import { AgentBaseService, ClubBaseService, CoachBaseService, PlayerBaseService } from "../../service";
+import { ROLE, TRoles } from "../../utills/roles";
 import { IUser } from "./user.interface";
 import User from "./user.model";
+import userProfileService, { UserProfileService } from "./user.profile.service";
 import {
   DEFAULT_USER_SELECT,
   USER_IMAGE_UPDATE_SELECT,
 } from "./user.utils";
+
+
+// roleModelsServices is a object that contains the model and model name for each role 
+const roleModelsServices = {
+  [ROLE.coach]: {
+    model: CoachBaseService,
+    modelName: "coaches",
+  },
+  [ROLE.player]: {
+    model: PlayerBaseService,
+    modelName: "players",
+  },
+  [ROLE.club]: {
+    model: ClubBaseService,
+    modelName: "clubs",
+  },
+  [ROLE.agents]: {
+    model: AgentBaseService,
+    modelName: "agents",
+  },
+} as const;
+
 
 export type GetUserWithProfileOptions = {
   userSelect?: string;
@@ -112,6 +135,8 @@ const getUserWithProfile = async (
   };
 };
 
+
+// get all users with profile
 const getAllUsers = async (options: GetAllUsersOptions = {}) => {
   const { select, ...search } = options;
 
@@ -120,6 +145,7 @@ const getAllUsers = async (options: GetAllUsersOptions = {}) => {
   );
 };
 
+// get single user with profile
 const getSingleUser = async (
   userId: string,
   options: GetUserWithProfileOptions = {}
@@ -127,6 +153,8 @@ const getSingleUser = async (
   return getUserWithProfile(userId, options);
 };
 
+
+// update user image
 const updateUserImage = async (userId: string, imagePath: string) => {
   const user = await User.findOneAndUpdate(
     { _id: userId, isDeleted: false },
@@ -141,6 +169,7 @@ const updateUserImage = async (userId: string, imagePath: string) => {
   return user;
 };
 
+// update user and profile
 const updateUserAndProfile = async (
   userId: string,
   payload: Record<string, unknown>

@@ -1,9 +1,9 @@
-import { HydratedDocument, Model } from "mongoose";
+import { Document } from "mongoose";
 import { TRoles } from "../../utills/roles";
 
 export type OtpPurpose = "verify" | "reset" | null;
 
-export interface IUser {
+export interface IUser extends Document {
   name: string;
   email: string;
   phone: string;
@@ -15,15 +15,8 @@ export interface IUser {
   isEmailVerified: boolean;
   isResetPassword: boolean;
   fcmToken: string | null;
+  isPasswordMatch(_password: string): Promise<boolean>;
   isDeleted: boolean;
 }
 
-export interface IUserMethods {
-  isPasswordMatch(_password: string): Promise<boolean>;
-}
-
-export type UserDocument = HydratedDocument<IUser, IUserMethods>;
-export type UserModel = Model<IUser, Record<string, never>, IUserMethods>;
-
-/** @deprecated Use UserDocument instead */
-export type IAMUser = UserDocument;
+export type UserDocument = IUser;

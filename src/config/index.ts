@@ -39,6 +39,20 @@ const config = {
     secretKey: process.env.STRIPE_SECRET_KEY ?? "",
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
   },
+    // File upload settings
+    file: {
+      UploaderServices: process.env.FILE_UPLOADER || 'LOCAL',
+      imageFileSizeLimit: Number(process.env.IMAGE_FILE_SIZE_LIMIT) || 5, // in MB
+    },
+
+
+    
+  // AWS S3 settings
+  aws: {
+    bucketRegion: process.env.AWS_BUCKET_REGION,
+    accessKeyId: process.env.AWS_YOUR_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_YOUR_SECRET_KEY,
+  },
 };
 
 export default config;

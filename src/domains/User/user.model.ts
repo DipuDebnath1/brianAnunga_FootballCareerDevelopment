@@ -3,9 +3,9 @@ import mongoose, { Schema } from "mongoose";
 import validator from "validator";
 import config from "../../config";
 import { AllRoles, ROLE } from "../../utills/roles";
-import { IUser, IUserMethods, UserModel } from "./user.interface";
+import { IUser } from "./user.interface";
 
-const userSchema = new Schema<IUser, UserModel, IUserMethods>(
+const userSchema = new Schema<IUser>(
   {
     name: {
       type: String,
@@ -138,6 +138,6 @@ userSchema.set('toJSON', {
   },
 });
 
-const User = mongoose.model<IUser, UserModel>("User", userSchema);
+const User = mongoose.model<IUser>("User", userSchema);
 
 export default User;

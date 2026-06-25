@@ -18,12 +18,14 @@ const coachSchema = new Schema<ICoach>(
     service: {
       title: { type: String, required: true },
       description: { type: String, required: true },
+      
     },
     consultationFee: { type: Number, required: true },
     videoReviewFee: { type: Number, required: true },
     areaOfExpertise: { type: [String], required: true },
     coachExperiences: { type: String, required: true },
     coachingPhilosophy: { type: String, required: true },
+    isAvailable: { type: Boolean, default: true },
     socialMedia: socialMediaSchema,
   },
   { timestamps: true }
