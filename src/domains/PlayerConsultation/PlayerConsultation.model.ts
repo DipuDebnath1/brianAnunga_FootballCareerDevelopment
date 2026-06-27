@@ -8,7 +8,7 @@ const playerConsultationRequestSchema = new Schema<IPlayerConsultationRequest>(
     consultationTopic: { type: String, required: true },
     bookingSlot: { type: String, required: true },
     questions: { type: String, required: true },
-    meetingLink: { type: String, required: true },
+    meetingLink: { type: String, required: false },
     status: { type: String, enum: Object.values(PlayerConsultationStatus), required: true, default: PlayerConsultationStatus.PENDING },
     coachFeedback: { type: String, default: "" },
   },

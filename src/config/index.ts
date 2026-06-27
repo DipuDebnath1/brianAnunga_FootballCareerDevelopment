@@ -53,6 +53,13 @@ const config = {
     accessKeyId: process.env.AWS_YOUR_ACCESS_KEY,
     secretAccessKey: process.env.AWS_YOUR_SECRET_KEY,
   },
+
+    // Cloudinary settings
+    cloudinary: {
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+      apiKey: process.env.CLOUDINARY_API_KEY,
+      apiSecret: process.env.CLOUDINARY_API_SECRET,
+    },
 };
 
 export default config;

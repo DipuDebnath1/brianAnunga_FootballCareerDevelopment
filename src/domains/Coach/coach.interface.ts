@@ -5,14 +5,20 @@ export type CoachServiceType = "video_review" | "consultation";
 
  
 export const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-type DayOfWeek = (typeof daysOfWeek)[number];
+export type DayOfWeek = (typeof daysOfWeek)[number];
 
 
 export interface ITimeSlot extends Document {
+  author: Types.ObjectId;
   day: DayOfWeek;
   startTime: Date;
   endTime: Date;
 }
+
+export type TimeSlotByDayGroup = {
+  day: DayOfWeek;
+  slots: Omit<ITimeSlot, keyof Document>[];
+};
 
 export interface ICoachService {
   title: string;

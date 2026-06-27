@@ -1,4 +1,4 @@
-import { Document, HydratedDocument, Model, Types } from "mongoose";
+import { Document, Model, Types } from "mongoose";
 
 export type RatingType = "coach" | "agent";
 
@@ -9,11 +9,13 @@ export interface IRating extends Document {
     value: 1 | 2 | 3 | 4 | 5;
     comment: string;
   };
-  order: Types.ObjectId;
+  videoReview?: Types.ObjectId;
+  consultation?: Types.ObjectId;
+  placement?: Types.ObjectId;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type RatingDocument = HydratedDocument<IRating>;
-export type RatingModel = Model<IRating>;
+
+

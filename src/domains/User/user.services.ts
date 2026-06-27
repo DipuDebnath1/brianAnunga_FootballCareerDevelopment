@@ -1,36 +1,15 @@
 import httpStatus from "http-status";
-import mongoose, { FilterQuery, PipelineStage } from "mongoose";
+import mongoose, { FilterQuery, PipelineStage, Types } from "mongoose";
 import AppError from "../../ErrorHandler/AppError";
-import { AgentBaseService, ClubBaseService, CoachBaseService, PlayerBaseService } from "../../service";
+import { UserBaseService } from "../../service";
 import { ROLE, TRoles } from "../../utills/roles";
 import { IUser } from "./user.interface";
 import User from "./user.model";
 import userProfileService, { UserProfileService } from "./user.profile.service";
 import {
-  DEFAULT_USER_SELECT,
-  USER_IMAGE_UPDATE_SELECT,
+  USER_IMAGE_UPDATE_SELECT
 } from "./user.utils";
-
-
-// roleModelsServices is a object that contains the model and model name for each role 
-const roleModelsServices = {
-  [ROLE.coach]: {
-    model: CoachBaseService,
-    modelName: "coaches",
-  },
-  [ROLE.player]: {
-    model: PlayerBaseService,
-    modelName: "players",
-  },
-  [ROLE.club]: {
-    model: ClubBaseService,
-    modelName: "clubs",
-  },
-  [ROLE.agents]: {
-    model: AgentBaseService,
-    modelName: "agents",
-  },
-} as const;
+const ObjectId = Types.ObjectId;
 
 
 export type GetUserWithProfileOptions = {
@@ -45,113 +24,232 @@ export type GetAllUsersOptions = {
   select?: string;
 };
 
-const toMongooseSelect = (select: string | undefined, fallback: string) => {
-  if (!select?.trim()) {
-    return fallback;
-  }
 
-  return select.trim().replace(/,/g, " ");
-};
-
-const parseRequestedFields = (select?: string) => {
-  if (!select?.trim()) {
-    return null;
-  }
-
-  return new Set(
-    select
-      .split(",")
-      .map((field) => field.trim())
-      .filter(Boolean)
+// get all users with pagination
+const AllUsers = async (query: FilterQuery<IUser>) => {
+  return UserBaseService.findWithPagination({ filters: query, select: "name email image role",
+  ...query    
+  }, 
   );
-};
+}
 
-const buildUserSelectForProfile = (userSelect?: string) => {
-  const select = toMongooseSelect(userSelect, DEFAULT_USER_SELECT);
+// all coaches for players
+const AllCoachesForPlayers = async (query: FilterQuery<IUser>) => {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
 
-  if (select.split(/\s+/).includes("role")) {
-    return select;
-  }
+  const search = query.search || "";
 
-  return `${select} role`;
-};
-
-const pickUserFields = <T extends Record<string, unknown>>(
-  user: T,
-  requestedFields: Set<string> | null
-) => {
-  if (!requestedFields) {
-    return user;
-  }
-
-  return Object.fromEntries(
-    Object.entries(user).filter(([key]) => requestedFields.has(key))
-  ) as T;
-};
-
-const buildUserSearchQuery = (
-  filter: Pick<GetAllUsersOptions, "name" | "email" | "role">
-): FilterQuery<IUser> => {
-  const query: FilterQuery<IUser> = { isDeleted: false };
-
-  if (filter.name?.trim()) {
-    query.name = { $regex: filter.name.trim(), $options: "i" };
-  }
-
-  if (filter.email?.trim()) {
-    query.email = { $regex: filter.email.trim(), $options: "i" };
-  }
-
-  if (filter.role) {
-    query.role = filter.role;
-  }
-
-  return query;
-};
-
-const getUserWithProfile = async (
-  userId: string,
-  options: GetUserWithProfileOptions = {}
-) => {
-  const requestedFields = parseRequestedFields(options.userSelect);
-
-  const user = await User.findOne({ _id: userId, isDeleted: false })
-    .select(buildUserSelectForProfile(options.userSelect))
-    .lean();
-
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, "User not found");
-  }
-
-  const profile = await userProfileService.findRoleProfile(
-    user.role as TRoles,
-    { author: userId },
-    options.profileSelect
-  );
-
-  return {
-    user: pickUserFields(user, requestedFields),
-    profile,
+  const filters = {
+    isDeleted: false,
+    role: ROLE.coach,
+    ...(search ? { name: { $regex: search, $options: "i" },email: { $regex: search, $options: "i" } } : {}),
   };
-};
 
+  const pipeplibe : PipelineStage[] = [
+    {
+      $match: filters
+      
+    },
+    {
+      $lookup: {
+        from: "coaches",
+        localField: "_id",
+        foreignField: "user_id",
+        as: "coach",
+      },
+    },
+    {
+      $unwind: "$coach",
+    },
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        email: 1,
+        image: 1,
+        profile : {
+          experiences: "$coach.experiences",
+          areaOfExpertise: "$coach.areaOfExpertise",
+        }
+      },
+    },
+    {
+      $match: {
+        "coach.isAvailable": true,
+      },
+    },
+  ];
 
-// get all users with profile
-const getAllUsers = async (options: GetAllUsersOptions = {}) => {
-  const { select, ...search } = options;
+  return UserBaseService.aggregateWithPagination(pipeplibe, { page, limit });
 
-  return User.find(buildUserSearchQuery(search)).select(
-    toMongooseSelect(select, DEFAULT_USER_SELECT)
-  );
-};
+}
 
-// get single user with profile
-const getSingleUser = async (
-  userId: string,
-  options: GetUserWithProfileOptions = {}
-) => {
-  return getUserWithProfile(userId, options);
-};
+// coach profile 
+const CoachProfile = async (coachId: string) => {
+  const pipeplibe : PipelineStage[] = [
+    {
+      $match: {
+        _id: new ObjectId(coachId),
+        isDeleted: false,
+        role: ROLE.coach,
+      },
+    },
+    {
+      $lookup: {
+        from: "coaches",
+        localField: "_id",
+        foreignField: "author",
+        as: "coach",
+      },
+    },
+    {
+      $unwind: "$coach",
+    },
+    {
+      $lookup: {
+        from: "ratings",
+        localField: "_id",
+        foreignField: "author",
+        as: "ratings",
+      },
+    },
+    {
+      $unwind: "$ratings",
+    },
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        email: 1,
+        image: 1,
+        profile : {
+          experiences: "$coach.experiences",
+          areaOfExpertise: "$coach.areaOfExpertise",
+        },
+        totalRating: { $sum: "$ratings.rating.value" },
+        avgRating: { $avg: "$ratings.rating.value" },
+      },
+    },
+  ];
+  return UserBaseService.aggregateWithPagination(pipeplibe, { page: 1, limit: 1 });
+}
+// all agents for players
+const AllAgentsForPlayers = async (query: FilterQuery<IUser>) => {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const search = query.search || "";
+
+  const filters = {
+    isDeleted: false,
+    role: ROLE.coach,
+    ...(search ? { name: { $regex: search, $options: "i" },email: { $regex: search, $options: "i" } } : {}),
+  };
+
+  const pipeplibe : PipelineStage[] = [
+    {
+      $match: filters
+    },
+    {
+      $lookup: {
+        from: "agents",
+        localField: "_id",
+        foreignField: "author",
+        as: "agent",
+      },
+    },
+    {
+      $unwind: "$agent",
+    },
+        {
+      $lookup: {
+        from: "agents",
+        localField: "_id",
+        foreignField: "author",
+        as: "agent",
+      },
+    },
+    {
+      $unwind: "$agent",
+    },
+    {
+      $lookup: {
+        from: "ratings",
+        localField: "_id",
+        foreignField: "author",
+        as: "ratings",
+      },
+    },
+    {
+      $unwind: "$ratings",
+    },
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        email: 1,
+        image: 1,
+        profile : {
+          experiences: "$agent.experiences",
+          areaOfExpertise: "$agent.areaOfExpertise",
+        },
+        totalRating: { $sum: "$ratings.rating.value" },
+        avgRating: { $avg: "$ratings.rating.value" },
+      },
+    },
+    ];
+    return UserBaseService.aggregateWithPagination(pipeplibe, { page, limit });
+}
+
+// agent profile 
+const AgentProfile = async (agentId: string) => {
+  const pipeplibe : PipelineStage[] = [
+    {
+      $match: {
+        _id: new ObjectId(agentId),
+        isDeleted: false,
+        role: ROLE.agents,
+      },
+    },
+    {
+      $lookup: {
+        from: "agents",
+        localField: "_id",
+        foreignField: "author",
+        as: "agent",
+      },
+    },
+    {
+      $unwind: "$agent",
+    },
+    {
+      $lookup: {
+        from: "ratings",
+        localField: "_id",
+        foreignField: "author",
+        as: "ratings",
+      },
+    },
+    {
+      $unwind: "$ratings",
+    },
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        email: 1,
+        image: 1,
+        profile : {
+          experiences: "$agent.experiences",
+          areaOfExpertise: "$agent.areaOfExpertise",
+        },
+        totalRating: { $sum: "$ratings.rating.value" },
+        avgRating: { $avg: "$ratings.rating.value" },
+      },
+    },
+    ];
+return UserBaseService.aggregateWithPagination(pipeplibe, { page: 1, limit: 1 });
+}
 
 
 // update user image
@@ -227,12 +325,15 @@ const updateUserAndProfile = async (
   }
 };
 
+
 export const UserServices = {
-  getUserWithProfile,
-  getAllUsers,
-  getSingleUser,
   updateUserImage,
   updateUserAndProfile,
+  AllCoachesForPlayers,
+  AllAgentsForPlayers,
+  AllUsers,
+  CoachProfile,
+  AgentProfile,
 };
 
 export default UserServices;

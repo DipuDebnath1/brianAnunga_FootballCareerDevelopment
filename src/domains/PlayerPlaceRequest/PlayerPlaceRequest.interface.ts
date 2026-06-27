@@ -1,15 +1,15 @@
 import { Document, Types } from "mongoose";
 
-export const PlayerRequestStatus = {
+export const PlayerPlacementStatus = {
   pending: "pending",
   accept: "accept",
   decline: "decline",
   completed: "completed",
 } as const;
 
-export type TPlayerRequestStatus =  (typeof PlayerRequestStatus)[keyof typeof PlayerRequestStatus];
+export type TPlayerPlacementStatus =  (typeof PlayerPlacementStatus)[keyof typeof PlayerPlacementStatus];
 
-export interface IPlayerRequest extends Document {
+export interface IPlayerPlacement extends Document {
   agent: Types.ObjectId;
   author: Types.ObjectId;
   preferredClub: string;
@@ -18,6 +18,6 @@ export interface IPlayerRequest extends Document {
   additionalInfo: string;
   resume?: string;
   video?: string;
-  status: TPlayerRequestStatus;
+  status: TPlayerPlacementStatus;
 }
 

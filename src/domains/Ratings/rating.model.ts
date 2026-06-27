@@ -25,14 +25,18 @@ const ratingSchema = new Schema<IRating>(
         required: true,
         trim: true,
       },
-      required: true,
-      min: 1,
-      max: 5,
     },
-    order: {
+    videoReview: {
       type: Schema.Types.ObjectId,
-      ref: "Order",
-      required: true,
+      ref: "PlayerVideoRequest",
+    },
+    consultation: {
+      type: Schema.Types.ObjectId,
+      ref: "PlayerConsultationRequest",
+    },
+    placement: {
+      type: Schema.Types.ObjectId,
+      ref: "PlayerPlacement",
     },
     isDeleted: {
       type: Boolean,

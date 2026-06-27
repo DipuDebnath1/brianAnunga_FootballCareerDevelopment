@@ -7,11 +7,12 @@ const playerVideoRequestSchema = new Schema<IPlayerVideoRequest>(
     coach: { type: Schema.Types.ObjectId, ref: "Coach", required: true },
     title: { type: String, required: true },
     description: { type: String, required: true },
-    video: { type: String, default: "" },
+    video: { type: String, required: true, validate: { validator: (value: string) => value.startsWith("https://"), message: "Video must be a valid URL" } },
     areaOfFocus: { type: String, required: true },
     playerFeedback: { type: String, default: "" },
     status: { type: String, enum: Object.values(PlayerVideoRequestStatus), required: true, default: PlayerVideoRequestStatus.PENDING },
     coachFeedback: { type: String, default: "" },
+    isReviewed: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

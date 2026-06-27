@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import { IPlayerRequest, PlayerRequestStatus } from "./PlayerRequest.interface";
+import { IPlayerPlacement, PlayerPlacementStatus } from "./PlayerPlaceRequest.interface";
 
-const playerRequestSchema = new Schema<IPlayerRequest>(
+const playerPlacementSchema = new Schema<IPlayerPlacement>(
   {
     agent: { type: Schema.Types.ObjectId, ref: "Agent", required: true },
     author: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -11,15 +11,15 @@ const playerRequestSchema = new Schema<IPlayerRequest>(
     additionalInfo: { type: String, required: true },
     resume: { type: String, default: "" },
     video: { type: String, default: "" },
-    status: { type: String, enum: Object.values(PlayerRequestStatus), required: true, default: PlayerRequestStatus.pending },
+    status: { type: String, enum: Object.values(PlayerPlacementStatus), required: true, default: PlayerPlacementStatus.pending },
 
   },
   { timestamps: true }
 );
 
-const PlayerRequest = mongoose.model< IPlayerRequest>(
-  "PlayerRequest",
-  playerRequestSchema
+const PlayerPlacement = mongoose.model< IPlayerPlacement>(
+  "PlayerPlacement",
+  playerPlacementSchema
 );
 
-export default PlayerRequest;
+export default PlayerPlacement;

@@ -31,7 +31,7 @@ const auth =
       const decodedData = accessTokenDecoded(token) as AccessTokenPayload;
       const userId = decodedData.sub;
 
-      const user = await User.findById(userId);
+      const user = await User.findById(userId).select("name email image role isDeleted");
       if (!user) {
         return next(new AppError(httpStatus.UNAUTHORIZED, "User not found"));
       }

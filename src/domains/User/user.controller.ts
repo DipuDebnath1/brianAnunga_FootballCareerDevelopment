@@ -1,67 +1,14 @@
 import { Request, RequestHandler, Response } from "express";
 import httpStatus from "http-status";
+import { FilterQuery } from "mongoose";
 import AppError from "../../ErrorHandler/AppError";
 import { ProtectedRequest } from "../../types/protected-request";
 import catchAsync from "../../utills/catchAsync";
 import sendResponse from "../../utills/sendResponse";
+import { IUser } from "./user.interface";
 import { UserServices } from "./user.services";
-import {
-  GetAllUsersQuery,
-  GetSingleUserQuery,
-} from "./user.validation";
 
-const getAllUsers: RequestHandler = catchAsync(
-  async (req: Request, res: Response) => {
-    const query = req.query as GetAllUsersQuery;
-    const users = await UserServices.getAllUsers(query);
-
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: "Users retrieved successfully",
-      data: users,
-    });
-  }
-);
-
-const getSingleUser: RequestHandler = catchAsync(
-  async (req: Request, res: Response) => {
-    const userId = req.params.userId as string;
-    const { select, profileSelect } = req.query as GetSingleUserQuery;
-
-    const result = await UserServices.getSingleUser(userId, {
-      userSelect: select,
-      profileSelect,
-    });
-
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: "User retrieved successfully",
-      data: result,
-    });
-  }
-);
-
-const getProfile: RequestHandler = catchAsync(
-  async (req: Request, res: Response) => {
-    const { user } = req as ProtectedRequest;
-    const { select, profileSelect } = req.query as GetSingleUserQuery;
-
-    const profile = await UserServices.getUserWithProfile(user!._id, {
-      userSelect: select,
-      profileSelect,
-    });
-
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: "User profile retrieved successfully",
-      data: profile,
-    });
-  }
-);
-
+// update user image
 const updateUserImage: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
     const { user } = req as ProtectedRequest;
@@ -84,6 +31,7 @@ const updateUserImage: RequestHandler = catchAsync(
   }
 );
 
+// update user and profile
 const updateProfile: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
     const { user } = req as ProtectedRequest;
@@ -100,12 +48,69 @@ const updateProfile: RequestHandler = catchAsync(
   }
 );
 
+// all coaches for players
+const allCoachesForPlayers: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+
+    const coaches = await UserServices.AllCoachesForPlayers(req.query as FilterQuery<IUser>);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "All coaches for players",
+      data: coaches,
+    });
+  }
+);
+
+// all agents for players
+const allAgentsForPlayers: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const agents = await UserServices.AllAgentsForPlayers(req.query as FilterQuery<IUser>);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "All agents for players",
+      data: agents,
+    });
+  }
+);
+
+// coach profile
+const coachProfile: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const coach = await UserServices.CoachProfile(req.params.id as string);
+    sendResponse(res, {   
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Coach profile",
+      data: coach,
+    });
+  }
+);
+
+// agent profile
+const agentProfile: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const agent = await UserServices.AgentProfile(req.params.id as string);
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Agent profile",
+      data: agent,
+    });
+  }
+);
+
+
+
+
 export const UserController = {
-  getAllUsers,
-  getSingleUser,
-  getProfile,
   updateUserImage,
   updateProfile,
+  allCoachesForPlayers,
+  allAgentsForPlayers,
+  coachProfile,
+  agentProfile,
 };
 
 export default UserController;

@@ -2,27 +2,12 @@ import { Router } from "express";
 import auth from "../../middlewares/auth";
 import fileUploader from "../../middlewares/fileUploader";
 import { validateUpdateProfile } from "../../middlewares/validateUpdateProfileMiddlewere";
-import validationRequest from "../../middlewares/validationRequest";
 import { ROLE } from "../../utills/roles";
 import { UserController } from "./user.controller";
-import UserValidation from "./user.validation";
 
 const fileUpload = fileUploader('users');
 const router = Router();
 
-router.get(
-  "/",
-  auth(ROLE.commonAdmin),
-  validationRequest(UserValidation.getAllUsersQuerySchema),
-  UserController.getAllUsers
-);
-
-router.get(
-  "/self/in",
-  auth(ROLE.common),
-  validationRequest(UserValidation.getSelfProfileQuerySchema),
-  UserController.getProfile
-);
 
 router.patch(
   "/self/image",
@@ -39,10 +24,26 @@ router.patch(
 );
 
 router.get(
-  "/:userId",
+  "/coaches",
   auth(ROLE.common),
-  validationRequest(UserValidation.getSingleUserQuerySchema),
-  UserController.getSingleUser
+  UserController.allCoachesForPlayers
 );
 
+router.get(
+  "/agents",
+  auth(ROLE.common),
+  UserController.allAgentsForPlayers
+);
+
+router.get(
+  "/coaches/:id",
+  auth(ROLE.common),
+  UserController.coachProfile
+);
+
+router.get(
+  "/agents/:id",
+  auth(ROLE.common),
+  UserController.agentProfile
+);
 export default router;

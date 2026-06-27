@@ -2,6 +2,8 @@ import Agent from "../domains/Agent/agent.model";
 import Club from "../domains/Club/club.model";
 import coachModel from "../domains/Coach/coach.model";
 import Player from "../domains/Players/players.model";
+import PlayerVideoRequest from "../domains/PlayerVideoRequests/PlayerVideoRequests.model";
+import Rating from "../domains/Ratings/rating.model";
 import User from "../domains/User/user.model";
 import BaseService from "./DBService";
 
@@ -12,7 +14,18 @@ const CoachBaseService = new BaseService(coachModel.Coach);
 const CoachTimeSlotBaseService = new BaseService(coachModel.TimeSlot);
 const ClubBaseService = new BaseService(Club);
 const AgentBaseService = new BaseService(Agent);
+const PlayerVideoRequestBaseService = new BaseService(PlayerVideoRequest);
+const RatingBaseService = new BaseService(Rating);
 
 
-export { AgentBaseService, ClubBaseService, CoachBaseService, CoachTimeSlotBaseService, PlayerBaseService, UserBaseService };
+export {
+  AgentBaseService,
+  ClubBaseService,
+  CoachBaseService,
+  CoachTimeSlotBaseService,
+  PlayerBaseService,
+  PlayerVideoRequestBaseService,
+  RatingBaseService,
+  UserBaseService,
+};
 

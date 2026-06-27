@@ -5,7 +5,7 @@ export const ROLE = {
   admin: 'admin',
   player: 'player',
   coach: 'coach',
-  agents: 'agents',
+  agents: 'agent',
   club: 'club',
   common: 'common',
   commonAdmin: 'commonAdmin',

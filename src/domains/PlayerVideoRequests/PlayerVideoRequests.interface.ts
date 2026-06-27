@@ -18,6 +18,7 @@ export interface IPlayerVideoRequest extends Document {
   playerFeedback?: string;
   status: IPlayerVideoRequestStatus;
   coachFeedback?: string;
+  isReviewed: boolean;
 }
 
 export type IPlayerVideoRequestDocument = HydratedDocument<IPlayerVideoRequest>;

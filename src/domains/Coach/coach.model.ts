@@ -4,6 +4,7 @@ import { daysOfWeek, ICoach, ITimeSlot } from "./coach.interface";
 
 
 const timeSlotSchema = new Schema<ITimeSlot>({
+  author: { type: Schema.Types.ObjectId, ref: "User", required: true },
   day: { type: String, enum: daysOfWeek, required: true },
   startTime: { type: Date, required: true },
   endTime: { type: Date, required: true },
