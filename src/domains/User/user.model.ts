@@ -56,6 +56,7 @@ const userSchema = new Schema<IUser>(
     isResetPassword: { type: Boolean, default: false },
     fcmToken: { type: String, default: null },
     isDeleted: { type: Boolean, default: false },
+    walletBalance: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

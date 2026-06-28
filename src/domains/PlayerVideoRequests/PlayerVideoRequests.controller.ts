@@ -94,6 +94,26 @@ const updateRequestStatus: RequestHandler = catchAsync(
   }
 );
 
+const cancelVideoRequest: RequestHandler = catchAsync(
+  async (req: Request, res: Response) => {
+    const { user } = req as ProtectedRequest;
+    const requestId = req.params.requestId as string;
+
+    const request = await PlayerVideoRequestsServices.cancelVideoRequest(
+      user!._id,
+      user!.role,
+      requestId
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Video analysis request cancelled successfully",
+      data: request,
+    });
+  }
+);
+
 const completeVideoRequest: RequestHandler = catchAsync(
   async (req: Request, res: Response) => {
     const { user } = req as ProtectedRequest;
@@ -143,6 +163,7 @@ export const PlayerVideoRequestsController = {
   getVideoRequests,
   getVideoRequestById,
   updateRequestStatus,
+  cancelVideoRequest,
   completeVideoRequest,
   addVideoReview,
 };

@@ -36,6 +36,13 @@ router.patch(
 );
 
 router.patch(
+  "/:requestId/cancel",
+  auth(ROLE.common),
+  validationRequest(PlayerVideoRequestsValidation.requestIdParamValidation),
+  PlayerVideoRequestsController.cancelVideoRequest
+);
+
+router.patch(
   "/:requestId/complete",
   auth(ROLE.coach),
   validationRequest(PlayerVideoRequestsValidation.completeVideoRequestValidation),

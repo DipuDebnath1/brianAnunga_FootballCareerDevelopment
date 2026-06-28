@@ -7,6 +7,7 @@ import {
   RatingBaseService,
 } from "../../service";
 import { ROLE } from "../../utills/roles";
+import WalletService from "../wallet/wallet.service";
 import {
   IPlayerVideoRequestStatus,
   PlayerVideoRequestStatus,
@@ -52,7 +53,7 @@ const createVideoRequest = async (
 
   const coach = await CoachBaseService.findOne({
     filters: { author: payload.coach },
-    select: "isAvailable",
+    select: "isAvailable videoReviewFee",
   });
 
   if (!coach) {
@@ -66,15 +67,46 @@ const createVideoRequest = async (
     );
   }
 
-  return PlayerVideoRequestBaseService.create({
-    player: new Types.ObjectId(userId),
-    coach: new Types.ObjectId(payload.coach),
-    title: payload.title,
-    description: payload.description,
-    video: payload.video,
-    areaOfFocus: payload.areaOfFocus,
-    status: PlayerVideoRequestStatus.PENDING,
-    isReviewed: false,
+  if (!coach.videoReviewFee || coach.videoReviewFee <= 0) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Coach video review price is not available"
+    );
+  }
+
+  return WalletService.withTransaction(async (session) => {
+    await WalletService.deductWalletBalance(
+      userId,
+      coach.videoReviewFee,
+      session
+    );
+
+    const request = await PlayerVideoRequestBaseService.create(
+      {
+        player: new Types.ObjectId(userId),
+        coach: new Types.ObjectId(payload.coach),
+        title: payload.title,
+        description: payload.description,
+        video: payload.video,
+        areaOfFocus: payload.areaOfFocus,
+        status: PlayerVideoRequestStatus.PENDING,
+        isReviewed: false,
+      },
+      session
+    );
+
+    await WalletService.createVideoReviewWalletTransaction(
+      {
+        senderId: userId,
+        receiverId: payload.coach,
+        amount: coach.videoReviewFee,
+        videoReviewRequestId: request._id.toString(),
+        description: `Video review payment for "${payload.title}"`,
+      },
+      session
+    );
+
+    return request;
   });
 };
 
@@ -141,6 +173,24 @@ const updateRequestStatus = async (
     );
   }
 
+  if (payload.status === PlayerVideoRequestStatus.DECLINE) {
+    return WalletService.withTransaction(async (session) => {
+      await WalletService.refundVideoReviewTransaction(requestId, session);
+
+      const updated = await PlayerVideoRequestBaseService.updateById(
+        requestId,
+        { $set: { status: payload.status } },
+        session
+      );
+
+      if (!updated) {
+        throw new AppError(httpStatus.NOT_FOUND, "Video request not found");
+      }
+
+      return updated;
+    });
+  }
+
   const updated = await PlayerVideoRequestBaseService.updateById(requestId, {
     $set: { status: payload.status },
   });
@@ -150,6 +200,53 @@ const updateRequestStatus = async (
   }
 
   return updated;
+};
+
+const cancelVideoRequest = async (
+  userId: string,
+  role: string,
+  requestId: string
+) => {
+  if (role === ROLE.player) {
+    const request = await getRequestForPlayer(userId, requestId);
+
+    if (request.status !== PlayerVideoRequestStatus.PENDING) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "Only pending bookings can be cancelled by player"
+      );
+    }
+  } else if (role === ROLE.coach) {
+    const request = await getRequestForCoach(userId, requestId);
+
+    if (
+      request.status !== PlayerVideoRequestStatus.PENDING &&
+      request.status !== PlayerVideoRequestStatus.ACCEPT
+    ) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "Coach can only cancel before video review is completed"
+      );
+    }
+  } else {
+    throw new AppError(httpStatus.FORBIDDEN, "Forbidden");
+  }
+
+  return WalletService.withTransaction(async (session) => {
+    await WalletService.refundVideoReviewTransaction(requestId, session);
+
+    const updated = await PlayerVideoRequestBaseService.updateById(
+      requestId,
+      { $set: { status: PlayerVideoRequestStatus.DECLINE } },
+      session
+    );
+
+    if (!updated) {
+      throw new AppError(httpStatus.NOT_FOUND, "Video request not found");
+    }
+
+    return updated;
+  });
 };
 
 const completeVideoRequest = async (
@@ -174,18 +271,26 @@ const completeVideoRequest = async (
     );
   }
 
-  const updated = await PlayerVideoRequestBaseService.updateById(requestId, {
-    $set: {
-      status: PlayerVideoRequestStatus.COMPLETED,
-      coachFeedback: payload.coachFeedback,
-    },
+  return WalletService.withTransaction(async (session) => {
+    await WalletService.completeVideoReviewTransaction(requestId, session);
+
+    const updated = await PlayerVideoRequestBaseService.updateById(
+      requestId,
+      {
+        $set: {
+          status: PlayerVideoRequestStatus.COMPLETED,
+          coachFeedback: payload.coachFeedback,
+        },
+      },
+      session
+    );
+
+    if (!updated) {
+      throw new AppError(httpStatus.NOT_FOUND, "Video request not found");
+    }
+
+    return updated;
   });
-
-  if (!updated) {
-    throw new AppError(httpStatus.NOT_FOUND, "Video request not found");
-  }
-
-  return updated;
 };
 
 const addVideoReview = async (
@@ -255,6 +360,7 @@ export const PlayerVideoRequestsServices = {
   getVideoRequests,
   getVideoRequestById,
   updateRequestStatus,
+  cancelVideoRequest,
   completeVideoRequest,
   addVideoReview,
 };

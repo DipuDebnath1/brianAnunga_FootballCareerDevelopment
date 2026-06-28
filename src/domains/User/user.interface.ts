@@ -17,6 +17,7 @@ export interface IUser extends Document {
   fcmToken: string | null;
   isPasswordMatch(_password: string): Promise<boolean>;
   isDeleted: boolean;
+  walletBalance: number;
 }
 
 export type UserDocument = IUser;

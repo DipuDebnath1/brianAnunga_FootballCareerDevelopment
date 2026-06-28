@@ -5,6 +5,7 @@ import Player from "../domains/Players/players.model";
 import PlayerVideoRequest from "../domains/PlayerVideoRequests/PlayerVideoRequests.model";
 import Rating from "../domains/Ratings/rating.model";
 import User from "../domains/User/user.model";
+import Wallet from "../domains/wallet/wallet.model";
 import BaseService from "./DBService";
 
 
@@ -16,6 +17,7 @@ const ClubBaseService = new BaseService(Club);
 const AgentBaseService = new BaseService(Agent);
 const PlayerVideoRequestBaseService = new BaseService(PlayerVideoRequest);
 const RatingBaseService = new BaseService(Rating);
+const WalletBaseService = new BaseService(Wallet);
 
 
 export {
@@ -27,5 +29,6 @@ export {
   PlayerVideoRequestBaseService,
   RatingBaseService,
   UserBaseService,
+  WalletBaseService
 };
 
