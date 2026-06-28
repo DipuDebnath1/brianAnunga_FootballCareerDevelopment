@@ -3,7 +3,6 @@ import { Types } from "mongoose";
 import AppError from "../../ErrorHandler/AppError";
 import {
   CoachBaseService,
-  PlayerBaseService,
   PlayerVideoRequestBaseService,
   RatingBaseService,
 } from "../../service";
@@ -19,54 +18,20 @@ import {
   UpdateRequestStatusInput,
 } from "./PlayerVideoRequests.validation";
 
-const getPlayerProfileId = async (userId: string) => {
-  const profile = await PlayerBaseService.findOne({
-    filters: { author: userId },
-  });
-
-  if (!profile) {
-    throw new AppError(httpStatus.NOT_FOUND, "Player profile not found");
-  }
-
-  return profile._id.toString();
-};
-
-const getCoachProfileId = async (userId: string) => {
-  const profile = await CoachBaseService.findOne({
-    filters: { author: userId },
-  });
-
-  if (!profile) {
-    throw new AppError(httpStatus.NOT_FOUND, "Coach profile not found");
-  }
-
-  return profile._id.toString();
-};
-
-const getCoachUserIdByProfileId = async (coachProfileId: string) => {
-  const coach = await CoachBaseService.findById(coachProfileId);
-
-  if (!coach) {
-    throw new AppError(httpStatus.NOT_FOUND, "Coach not found");
-  }
-
-  return coach.author.toString();
-};
-
-const getRequestForPlayer = async (playerProfileId: string, requestId: string) => {
+const getRequestForPlayer = async (userId: string, requestId: string) => {
   const request = await PlayerVideoRequestBaseService.findById(requestId);
 
-  if (!request || request.player.toString() !== playerProfileId) {
+  if (!request || request.player.toString() !== userId) {
     throw new AppError(httpStatus.NOT_FOUND, "Video request not found");
   }
 
   return request;
 };
 
-const getRequestForCoach = async (coachProfileId: string, requestId: string) => {
+const getRequestForCoach = async (userId: string, requestId: string) => {
   const request = await PlayerVideoRequestBaseService.findById(requestId);
 
-  if (!request || request.coach.toString() !== coachProfileId) {
+  if (!request || request.coach.toString() !== userId) {
     throw new AppError(httpStatus.NOT_FOUND, "Video request not found");
   }
 
@@ -85,21 +50,29 @@ const createVideoRequest = async (
     );
   }
 
-  const playerProfileId = await getPlayerProfileId(userId);
-  const coach = await CoachBaseService.findById(payload.coach);
+  const coach = await CoachBaseService.findOne({
+    filters: { author: payload.coach },
+    select: "isAvailable",
+  });
 
   if (!coach) {
     throw new AppError(httpStatus.NOT_FOUND, "Coach not found");
   }
 
+  if (!coach.isAvailable) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Coach is not available right now"
+    );
+  }
+
   return PlayerVideoRequestBaseService.create({
-    player: new Types.ObjectId(playerProfileId),
+    player: new Types.ObjectId(userId),
     coach: new Types.ObjectId(payload.coach),
     title: payload.title,
     description: payload.description,
     video: payload.video,
     areaOfFocus: payload.areaOfFocus,
-    playerFeedback: payload.playerFeedback ?? "",
     status: PlayerVideoRequestStatus.PENDING,
     isReviewed: false,
   });
@@ -113,9 +86,9 @@ const getVideoRequests = async (
   const filters: Record<string, unknown> = {};
 
   if (role === ROLE.player) {
-    filters.player = await getPlayerProfileId(userId);
+    filters.player = userId;
   } else if (role === ROLE.coach) {
-    filters.coach = await getCoachProfileId(userId);
+    filters.coach = userId;
   } else {
     throw new AppError(httpStatus.FORBIDDEN, "Forbidden");
   }
@@ -136,13 +109,11 @@ const getVideoRequestById = async (
   requestId: string
 ) => {
   if (role === ROLE.player) {
-    const playerProfileId = await getPlayerProfileId(userId);
-    return getRequestForPlayer(playerProfileId, requestId);
+    return getRequestForPlayer(userId, requestId);
   }
 
   if (role === ROLE.coach) {
-    const coachProfileId = await getCoachProfileId(userId);
-    return getRequestForCoach(coachProfileId, requestId);
+    return getRequestForCoach(userId, requestId);
   }
 
   throw new AppError(httpStatus.FORBIDDEN, "Forbidden");
@@ -161,8 +132,7 @@ const updateRequestStatus = async (
     );
   }
 
-  const coachProfileId = await getCoachProfileId(userId);
-  const request = await getRequestForCoach(coachProfileId, requestId);
+  const request = await getRequestForCoach(userId, requestId);
 
   if (request.status !== PlayerVideoRequestStatus.PENDING) {
     throw new AppError(
@@ -195,8 +165,7 @@ const completeVideoRequest = async (
     );
   }
 
-  const coachProfileId = await getCoachProfileId(userId);
-  const request = await getRequestForCoach(coachProfileId, requestId);
+  const request = await getRequestForCoach(userId, requestId);
 
   if (request.status !== PlayerVideoRequestStatus.ACCEPT) {
     throw new AppError(
@@ -232,8 +201,7 @@ const addVideoReview = async (
     );
   }
 
-  const playerProfileId = await getPlayerProfileId(userId);
-  const request = await getRequestForPlayer(playerProfileId, requestId);
+  const request = await getRequestForPlayer(userId, requestId);
 
   if (request.status !== PlayerVideoRequestStatus.COMPLETED) {
     throw new AppError(
@@ -264,11 +232,9 @@ const addVideoReview = async (
     );
   }
 
-  const coachUserId = await getCoachUserIdByProfileId(request.coach.toString());
-
   const review = await RatingBaseService.create({
     author: new Types.ObjectId(userId),
-    rated: new Types.ObjectId(coachUserId),
+    rated: new Types.ObjectId(request.coach.toString()),
     rating: {
       value: payload.value as 1 | 2 | 3 | 4 | 5,
       comment: payload.comment,

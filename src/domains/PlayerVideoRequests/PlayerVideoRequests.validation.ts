@@ -19,7 +19,6 @@ export const createVideoRequestValidation = z.object({
     description: z.string().min(1, "Description is required"),
     video: videoUrlSchema,
     areaOfFocus: z.string().min(1, "Area of focus is required"),
-    playerFeedback: z.string().optional(),
   }),
 });
 

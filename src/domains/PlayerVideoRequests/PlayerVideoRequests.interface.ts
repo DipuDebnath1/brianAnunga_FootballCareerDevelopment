@@ -15,7 +15,6 @@ export interface IPlayerVideoRequest extends Document {
   description: string;
   video?: string;
   areaOfFocus: string;
-  playerFeedback?: string;
   status: IPlayerVideoRequestStatus;
   coachFeedback?: string;
   isReviewed: boolean;
