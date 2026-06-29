@@ -22,19 +22,17 @@ import {
 const getRequestForPlayer = async (userId: string, requestId: string) => {
   const request = await PlayerVideoRequestBaseService.findById(requestId);
 
-  if (!request || request.player.toString() !== userId) {
+  if (!request || request.player.toString() !== userId) 
     throw new AppError(httpStatus.NOT_FOUND, "Video request not found");
-  }
-
+  
   return request;
 };
 
 const getRequestForCoach = async (userId: string, requestId: string) => {
   const request = await PlayerVideoRequestBaseService.findById(requestId);
 
-  if (!request || request.coach.toString() !== userId) {
+  if (!request || request.coach.toString() !== userId) 
     throw new AppError(httpStatus.NOT_FOUND, "Video request not found");
-  }
 
   return request;
 };
@@ -207,9 +205,9 @@ const cancelVideoRequest = async (
   role: string,
   requestId: string
 ) => {
+
   if (role === ROLE.player) {
     const request = await getRequestForPlayer(userId, requestId);
-
     if (request.status !== PlayerVideoRequestStatus.PENDING) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
@@ -237,7 +235,7 @@ const cancelVideoRequest = async (
 
     const updated = await PlayerVideoRequestBaseService.updateById(
       requestId,
-      { $set: { status: PlayerVideoRequestStatus.DECLINE } },
+      { $set: { status: PlayerVideoRequestStatus.CANCELLED, cancelledBy: new Types.ObjectId(userId) } },
       session
     );
 

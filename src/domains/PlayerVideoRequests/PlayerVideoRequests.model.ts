@@ -12,6 +12,7 @@ const playerVideoRequestSchema = new Schema<IPlayerVideoRequest>(
     status: { type: String, enum: Object.values(PlayerVideoRequestStatus), required: true, default: PlayerVideoRequestStatus.PENDING },
     coachFeedback: { type: String, default: "" },
     isReviewed: { type: Boolean, default: false },
+    cancelledBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
   },
   { timestamps: true }
 );

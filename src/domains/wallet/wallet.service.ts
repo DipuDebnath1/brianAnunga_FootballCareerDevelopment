@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import httpStatus from "http-status";
-import mongoose, { ClientSession } from "mongoose";
+import mongoose, { ClientSession, Types } from "mongoose";
 import AppError from "../../ErrorHandler/AppError";
 import User from "../User/user.model";
 import Wallet from "./wallet.model";
@@ -40,9 +40,8 @@ const creditWalletBalance = async (
     { session, new: true }
   ).select("walletBalance");
 
-  if (!user) {
+  if (!user) 
     throw new AppError(httpStatus.NOT_FOUND, "User not found");
-  }
 
   return user;
 };
@@ -80,15 +79,16 @@ const getPendingWalletByVideoRequest = async (
   session?: ClientSession
 ) => {
   const query = Wallet.findOne({
-    videoReviewRequest: videoReviewRequestId,
+    videoReviewRequest: new Types.ObjectId(videoReviewRequestId),
     status: "pending",
   });
 
-  if (session) {
+  if (session) 
     query.session(session);
-  }
 
-  return query.exec();
+  const result = await query.exec();
+
+  return result;
 };
 
 const refundVideoReviewTransaction = async (
@@ -99,10 +99,8 @@ const refundVideoReviewTransaction = async (
     videoReviewRequestId,
     session
   );
-
-  if (!walletTx) {
+  if (!walletTx) 
     throw new AppError(httpStatus.NOT_FOUND, "Wallet transaction not found");
-  }
 
   await creditWalletBalance(walletTx.sender.toString(), walletTx.amount, session);
 
@@ -121,9 +119,8 @@ const completeVideoReviewTransaction = async (
     session
   );
 
-  if (!walletTx) {
+  if (!walletTx) 
     throw new AppError(httpStatus.NOT_FOUND, "Wallet transaction not found");
-  }
 
   await creditWalletBalance(
     walletTx.receiver.toString(),

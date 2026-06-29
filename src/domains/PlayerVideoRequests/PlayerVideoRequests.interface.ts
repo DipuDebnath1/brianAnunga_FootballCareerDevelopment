@@ -4,6 +4,7 @@ export const PlayerVideoRequestStatus = {
   PENDING: "pending",
   ACCEPT: "accept",
   DECLINE: "decline",
+  CANCELLED: "cancelled",
   COMPLETED: "completed",
 } as const;
 export type IPlayerVideoRequestStatus = (typeof PlayerVideoRequestStatus)[keyof typeof PlayerVideoRequestStatus];
@@ -16,6 +17,7 @@ export interface IPlayerVideoRequest extends Document {
   video?: string;
   areaOfFocus: string;
   status: IPlayerVideoRequestStatus;
+  cancelledBy?: Types.ObjectId;
   coachFeedback?: string;
   isReviewed: boolean;
 }
