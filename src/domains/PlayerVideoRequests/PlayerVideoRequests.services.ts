@@ -20,7 +20,15 @@ import {
 } from "./PlayerVideoRequests.validation";
 
 const getRequestForPlayer = async (userId: string, requestId: string) => {
-  const request = await PlayerVideoRequestBaseService.findById(requestId);
+  const request = await PlayerVideoRequestBaseService.findById(requestId, {
+    select: "player coach title description video areaOfFocus status cancelledBy coachFeedback isReviewed",
+    populate: [
+      {
+        path: "coach",
+        select: "name email phone image",
+      }
+    ],
+  });
 
   if (!request || request.player.toString() !== userId) 
     throw new AppError(httpStatus.NOT_FOUND, "Video request not found");
@@ -29,9 +37,17 @@ const getRequestForPlayer = async (userId: string, requestId: string) => {
 };
 
 const getRequestForCoach = async (userId: string, requestId: string) => {
-  const request = await PlayerVideoRequestBaseService.findById(requestId);
+  const request = await PlayerVideoRequestBaseService.findById(requestId, {
+    select: "player coach title description video areaOfFocus status cancelledBy coachFeedback isReviewed",
+    populate: [
+      {
+        path: "player",
+        select: "name email phone image",
+      }
+    ],
+  });
 
-  if (!request || request.coach.toString() !== userId) 
+  if (!request || request?.coach?.toString() !== userId) 
     throw new AppError(httpStatus.NOT_FOUND, "Video request not found");
 
   return request;

@@ -23,6 +23,7 @@ const walletSchema = new Schema<IWallet>(
 );
 
 walletSchema.index({ videoReviewRequest: 1, status: 1 });
+walletSchema.index({ consultationRequest: 1, status: 1 });
 
 const Wallet = model<IWallet>("Wallet", walletSchema);
 export default Wallet;

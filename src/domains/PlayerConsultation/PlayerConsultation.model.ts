@@ -3,14 +3,16 @@ import { IPlayerConsultationRequest, PlayerConsultationStatus } from "./PlayerCo
 
 const playerConsultationRequestSchema = new Schema<IPlayerConsultationRequest>(
   {
-    coach: { type: Schema.Types.ObjectId, ref: "Coach", required: true },
-    player: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    coach: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    player: { type: Schema.Types.ObjectId, ref: "User", required: true },
     consultationTopic: { type: String, required: true },
     bookingSlot: { type: String, required: true },
     questions: { type: String, required: true },
     meetingLink: { type: String, required: false },
     status: { type: String, enum: Object.values(PlayerConsultationStatus), required: true, default: PlayerConsultationStatus.PENDING },
     coachFeedback: { type: String, default: "" },
+    cancelledBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    isReviewed: { type: Boolean, default: false },
   },
   { timestamps: true }  
 );

@@ -74,6 +74,34 @@ const createVideoReviewWalletTransaction = async (
   return transaction;
 };
 
+const createConsultationWalletTransaction = async (
+  params: {
+    senderId: string;
+    receiverId: string;
+    amount: number;
+    consultationRequestId: string;
+    description: string;
+  },
+  session: ClientSession
+) => {
+  const [transaction] = await Wallet.create(
+    [
+      {
+        sender: params.senderId,
+        receiver: params.receiverId,
+        amount: params.amount,
+        transactionId: generateTransactionId(),
+        status: "pending",
+        consultationRequest: params.consultationRequestId,
+        description: params.description,
+      },
+    ],
+    { session }
+  );
+
+  return transaction;
+};
+
 const getPendingWalletByVideoRequest = async (
   videoReviewRequestId: string,
   session?: ClientSession
@@ -89,6 +117,22 @@ const getPendingWalletByVideoRequest = async (
   const result = await query.exec();
 
   return result;
+};
+
+const getPendingWalletByConsultationRequest = async (
+  consultationRequestId: string,
+  session?: ClientSession
+) => {
+  const query = Wallet.findOne({
+    consultationRequest: new Types.ObjectId(consultationRequestId),
+    status: "pending",
+  });
+
+  if (session) {
+    query.session(session);
+  }
+
+  return query.exec();
 };
 
 const refundVideoReviewTransaction = async (
@@ -134,6 +178,52 @@ const completeVideoReviewTransaction = async (
   return walletTx;
 };
 
+const refundConsultationTransaction = async (
+  consultationRequestId: string,
+  session: ClientSession
+) => {
+  const walletTx = await getPendingWalletByConsultationRequest(
+    consultationRequestId,
+    session
+  );
+
+  if (!walletTx) {
+    throw new AppError(httpStatus.NOT_FOUND, "Wallet transaction not found");
+  }
+
+  await creditWalletBalance(walletTx.sender.toString(), walletTx.amount, session);
+
+  walletTx.status = "cancelled";
+  await walletTx.save({ session });
+
+  return walletTx;
+};
+
+const completeConsultationTransaction = async (
+  consultationRequestId: string,
+  session: ClientSession
+) => {
+  const walletTx = await getPendingWalletByConsultationRequest(
+    consultationRequestId,
+    session
+  );
+
+  if (!walletTx) {
+    throw new AppError(httpStatus.NOT_FOUND, "Wallet transaction not found");
+  }
+
+  await creditWalletBalance(
+    walletTx.receiver.toString(),
+    walletTx.amount,
+    session
+  );
+
+  walletTx.status = "success";
+  await walletTx.save({ session });
+
+  return walletTx;
+};
+
 const withTransaction = async <T>(handler: (session: ClientSession) => Promise<T>) => {
   const session = await mongoose.startSession();
 
@@ -154,9 +244,13 @@ export const WalletService = {
   deductWalletBalance,
   creditWalletBalance,
   createVideoReviewWalletTransaction,
+  createConsultationWalletTransaction,
   getPendingWalletByVideoRequest,
+  getPendingWalletByConsultationRequest,
   refundVideoReviewTransaction,
+  refundConsultationTransaction,
   completeVideoReviewTransaction,
+  completeConsultationTransaction,
   withTransaction,
 };
 
