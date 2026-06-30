@@ -224,7 +224,9 @@ const completeConsultationTransaction = async (
   return walletTx;
 };
 
-const withTransaction = async <T>(handler: (session: ClientSession) => Promise<T>) => {
+const withTransaction = async <T>(
+  handler: (_session: ClientSession) => Promise<T>
+) => {
   const session = await mongoose.startSession();
 
   try {

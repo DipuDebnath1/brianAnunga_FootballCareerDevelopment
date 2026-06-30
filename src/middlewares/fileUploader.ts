@@ -1,22 +1,29 @@
-// middlewares/fileUploader.ts
-import httpStatus from 'http-status';
-import AppError from '../ErrorHandler/AppError';
-import config from '../config';
-import s3Uploader from './fileUploadS3';
-import fileUploadLocally from './fileUploadLocally';
+import httpStatus from "http-status";
+import AppError from "../ErrorHandler/AppError";
+import config from "../config";
+import fileUploadLocally from "./fileUploadLocally";
+import s3Uploader from "./fileUploadS3";
+import cloudinaryUploader from "./multerCloudinaryStorage";
 
-const fileUploader = (folderName = 'others') => {
-  if (config.file.UploaderServices === 'AWS') {
+const fileUploader = (folderName = "others", Service?: "AWS" | "LOCAL" | "CLOUDINARY" ) => {
+
+const uploaderService = Service || config.file.UploaderServices;
+
+  if (uploaderService === "AWS") {
     return s3Uploader({ folderName });
   }
 
-  if (config.file.UploaderServices === 'LOCAL') {
+  if (uploaderService === "LOCAL") {
     return fileUploadLocally(folderName);
+  }
+
+  if (uploaderService === "CLOUDINARY") {
+    return cloudinaryUploader(folderName);
   }
 
   throw new AppError(
     httpStatus.BAD_GATEWAY,
-    `Invalid uploader service: ${config.file.UploaderServices}`,
+    `Invalid uploader service: ${config.file.UploaderServices}`
   );
 };
 

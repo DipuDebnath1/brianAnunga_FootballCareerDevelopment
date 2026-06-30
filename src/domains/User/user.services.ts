@@ -1,7 +1,6 @@
 import httpStatus from "http-status";
 import mongoose, { FilterQuery, PipelineStage, Types } from "mongoose";
 import AppError from "../../ErrorHandler/AppError";
-import logger from "../../lib/logger";
 import { UserBaseService } from "../../service";
 import { ROLE, TRoles } from "../../utills/roles";
 import { IUser } from "./user.interface";
@@ -338,13 +337,4 @@ export const UserServices = {
 };
 
 export default UserServices;
-const addWalletBalance = async (userId: string, amount: number) => {
-  const user = await UserBaseService.findById(userId);
-  if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
-  user.walletBalance += amount;
-  await UserBaseService.updateById(userId, { $set: { walletBalance: user.walletBalance } });
-  logger.info(`Wallet balance added for user ${userId}`, { amount });
-  return user;
-}
 
-// addWalletBalance("6a3cc31b8177abaa3a16b252", 100);

@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars, no-undef */
 declare module "multer-s3" {
   import type { S3Client } from "@aws-sdk/client-s3";
   import type { Request } from "express";

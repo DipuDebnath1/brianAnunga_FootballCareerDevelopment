@@ -3,7 +3,7 @@ import { IPlayerPlacement, PlayerPlacementStatus } from "./PlayerPlaceRequest.in
 
 const playerPlacementSchema = new Schema<IPlayerPlacement>(
   {
-    agent: { type: Schema.Types.ObjectId, ref: "Agent", required: true },
+    agent: { type: Schema.Types.ObjectId, ref: "User", required: true },
     author: { type: Schema.Types.ObjectId, ref: "User", required: true },
     preferredClub: { type: String, required: true },
     preferredLeagues: { type: String, required: true },
@@ -23,3 +23,4 @@ const PlayerPlacement = mongoose.model< IPlayerPlacement>(
 );
 
 export default PlayerPlacement;
+ 
